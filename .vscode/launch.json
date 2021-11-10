@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: hexdump.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["/Users/rutvijshah/Desktop/Fall2021/CS6360_DB/GroupProject/rioDatabaseEngine/resources/test_dump.txt"]
+        }
+    ]
+}

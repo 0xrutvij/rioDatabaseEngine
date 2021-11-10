@@ -1,0 +1,10 @@
+TagID,Name,Weight(kg),Age(years)
+933,Rover,20.6,4
+8326,Spot,10.8,7
+5359,Lucky,31.2,5
+10355,Dinky,4.8,11
+7757,Bruiser,42.0,6
+3597,Patch,29.6,9
+202,Prince,16.6,7
+1630,Bubbles,7.1,1 
+11223,Peanut,14.3,2
