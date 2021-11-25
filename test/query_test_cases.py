@@ -74,9 +74,77 @@ insert_row_test_result = """{
 
 ######################################
 
-######################################
+delete_row_test_case = "DELETE FROM TABLE example_table WHERE name <> 'joe';"
+
+delete_row_test_result = """{
+  "command": "DELETE",
+  "table_name": "example_table",
+  "condition": {
+    "negated": "FALSE",
+    "column_name": "name",
+    "comparator": "<>",
+    "value": "'joe'"
+  }
+}"""
 
 ######################################
+
+update_row_test_case = """
+UPDATE Customers
+SET ContactName='Juan'
+WHERE Country='Mexico';
+"""
+
+update_row_test_result = """{
+  "command": "UPDATE",
+  "table_name": "Customers",
+  "operation": {
+    "operation_type": "SET",
+    "column_name": "ContactName",
+    "comparator": "=",
+    "value": "'Juan'"
+  },
+  "condition": {
+    "negated": "FALSE",
+    "column_name": "Country",
+    "comparator": "=",
+    "value": "'Mexico'"
+  }
+}"""
+
+######################################
+
+select_test_case1 = """
+SELECT column1, column2, col3
+FROM table_name;
+"""
+select_test_result1 = """{
+  "command": "SELECT",
+  "column_name_list": [
+    "column1",
+    "column2",
+    "col3"
+  ],
+  "table_name": "table_name",
+  "condition": {}
+}"""
+
+
+select_test_case2 = """
+SELECT * FROM Customers
+WHERE Country='Mexico';
+"""
+select_test_result2= """{
+  "command": "SELECT",
+  "column_name_list": [],
+  "table_name": "Customers",
+  "condition": {
+    "negated": "FALSE",
+    "column_name": "Country",
+    "comparator": "=",
+    "value": "'Mexico'"
+  }
+}"""
 
 ######################################
 

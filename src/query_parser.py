@@ -1,6 +1,4 @@
 import json
-import unittest
-from typing import Dict
 from pyparsing import (
     CaselessKeyword,
     CaselessLiteral,
@@ -8,14 +6,14 @@ from pyparsing import (
     Literal,
     Opt,
     Regex,
+    Suppress,
     Word,
     alphanums,
     alphas,
+    delimited_list,
+    one_of,
     quoted_string,
-    rest_of_line
 )
-from pyparsing.core import Keyword, Opt, Suppress
-from pyparsing.helpers import delimited_list, one_of
 
 RE_RUN_TESTS = False
 
@@ -308,12 +306,20 @@ select_statement.set_parse_action(lambda plist: {
     "condition": plist[3]
 })
 
+###########################################################
+###################### SQL Statement ######################
+###########################################################
 
-# SQL Statement
+show_table_stmt.set_parse_action(
+    lambda: select_statement.parse_string("SELECT table_name FROM davisbase_tables;")
+)
+
 statement = (create_table_stmt | drop_table_stmt | create_index_stmt | insert_row_stmt
              | delete_record_stmt | update_record_stmt | select_statement | show_table_stmt)
 
-########################################
+
+###########################################################
+###########################################################
 
 
 if RE_RUN_TESTS:
@@ -351,39 +357,3 @@ if RE_RUN_TESTS:
     print(predicate.parse_string("NOT c_name > '12'"))
 
     print(set_clause.parse_string("SET ContactName='Juan'"))
-
-    res = statement.parse_string("DELETE FROM TABLE example_table WHERE name <> 'joe';")
-
-    print_result0_as_json(res)
-
-    res = statement.parse_string(
-    """
-    UPDATE Customers
-    SET ContactName='Juan'
-    WHERE Country='Mexico';
-    """)
-
-    print_result0_as_json(res)
-
-    x3 = select_statement.parse_string(
-    """
-    SELECT column1, column2, col3
-    FROM table_name;
-    """)
-
-    x4 = select_statement.parse_string(
-    """
-    SELECT * FROM Customers
-    WHERE Country='Mexico';
-    """
-    )
-
-    print_result0_as_json(x3)
-
-    print_result0_as_json(x4)
-
-    res = statement.parse_string("SELECT table_name FROM davisbase_tables;")
-    print_result0_as_json(res)
-
-    x = statement.parse_string("SHOW TABLES;")
-    print(x)
