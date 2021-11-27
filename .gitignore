@@ -1,5 +1,6 @@
 .idea/
 filedump2.txt
+*.hex
 
 # Created by https://www.gitignore.io/api/macos,linux,django,python,pycharm
 

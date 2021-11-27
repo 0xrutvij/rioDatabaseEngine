@@ -8,7 +8,7 @@ class Settings(objectless):
     """Never to be instantiated."""
     _prompt = "davisql> "
     _version = "1.2"
-    _copyright = "Â©2020 Chris Irwin Davis"
+    _copyright = "©2020 Chris Irwin Davis"
     _is_exit = False
     _page_size = 512
 
