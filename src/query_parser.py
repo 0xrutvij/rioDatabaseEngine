@@ -190,7 +190,7 @@ integer.set_name("int")
 numeric_literal = Regex(r"[+-]?\d*\.?\d+([eE][+-]?\d+)?")
 numeric_literal.set_name("real number")
 
-string_literal = quoted_string
+string_literal = quoted_string.set_parse_action(lambda toks: str.replace(toks[0], "'", "").replace('"', ""))
 string_literal.set_name("string")
 
 # Null is an empty string <- should take no memory in record body

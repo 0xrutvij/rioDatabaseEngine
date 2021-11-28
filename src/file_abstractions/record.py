@@ -1,12 +1,32 @@
+from __future__ import annotations
 from enums import DataType
 import io
 import numpy as np
 
 from dataclasses import dataclass
 from functools import total_ordering
-from typing import List
+from itertools import filterfalse
+from typing import Dict, List
+from operator import lt, gt, eq, ne, ge, le, itemgetter
 
 from header import int_to_byte_stream, big_endian_int
+
+_CONDITION_NEGATED = {
+    "=": "<>",
+    ">=": "<",
+    "<=": ">"
+}
+
+CONDITION_NEGATED = {v: k for k, v in _CONDITION_NEGATED.items()} | _CONDITION_NEGATED
+
+COMP_FUNCT = {
+    "=": eq,
+    ">=": ge,
+    "<=": le,
+    "<>": ne,
+    ">": gt,
+    "<": lt
+}
 
 @dataclass
 @total_ordering
@@ -39,6 +59,51 @@ class Record:
             row_id_byte_stream,
             payload
         ])
+
+    def matches_condition(self, condition: Dict) -> bool:
+        """
+        where the condition if of the form
+        Table class will convert ("column_name": "Country") to ("column_ord": 1 ... n)
+        "condition": {
+            "negated": "FALSE",
+            "column_name": "Country",
+            "column_ord": 1 ... n,
+            "comparator": "=",
+            "value": "Mexico"
+        }
+        """
+        lval = self.data_values[condition["column_ord"]]
+        rval = condition["value"]
+        comp = condition["comparator"]
+        if condition["negated"] == "TRUE":
+            comp = CONDITION_NEGATED[comp]
+
+        return COMP_FUNCT[comp](lval, rval)
+
+    def update_val(self, operation: Dict):
+        """
+        where an operation is of the form
+        Table class will convert ("column_name": "Country") to ("column_ord": 1 ... n)
+        "operation": {
+            "operation_type": "SET",
+            "column_name": "Country",
+            "column_ord": 1 ... n,
+            "comparator": "=",
+            "value": "Juan"
+        },
+        the "comparator" is always "=" as in the assignment operator.
+        """
+        rval = operation["value"]
+        type_ = self.data_types[operation["column_ord"]]
+        type_cast = type_.value[3]
+        col_name = operation["column_name"]
+
+        if isinstance(rval, type_cast):
+            self.data_values[operation["column_ord"]] = type_cast(rval)
+            return self
+        else:
+            raise TypeError(f"{rval} isn't a valid value for {col_name} of type {type_.value[0]}")
+
 
     def __lt__(self, other):
         return self.row_id < other.row_id
@@ -88,3 +153,29 @@ class Record:
             d_vals
         )
 
+    @classmethod
+    def filter_update(cls, ls: List[Record], operation: Dict, condition: Dict) -> List[Record]:
+        filter_ = cls.filter_func(condition)
+        update_ = cls.record_updater(operation)
+        return [update_(rec) if filter_(rec) else rec for rec in ls]
+
+    @classmethod
+    def filter_delete(cls, ls: List[Record], condition: Dict) -> List[Record]:
+        filter_ = cls.filter_func(condition)
+        return list(filterfalse(filter_, ls))
+
+    @classmethod
+    def filter_subset_select(cls, ls: List[Record], col_ord_list: List[int], condition: Dict = None) -> List[List]:
+        filter_ = cls.filter_func(condition) if condition else lambda x: True
+        columns_filter = itemgetter(*col_ord_list) if col_ord_list else lambda x: tuple(x)
+        cf_wrapper = lambda x: list(r) if isinstance((r := columns_filter(x)), tuple) else [r]
+
+        return [cf_wrapper(rec.data_values) for rec in filter(filter_, ls)]
+
+    @classmethod
+    def filter_func(cls, condition: Dict):
+        return lambda x: cls.matches_condition(x, condition)
+
+    @classmethod
+    def record_updater(cls, operation: Dict):
+        return lambda x: cls.update_val(x, operation)

@@ -65,10 +65,10 @@ insert_row_test_result = """{
   ],
   "table_name": "organisation",
   "value_list": [
-    "'123'",
-    "'Company'",
-    "'123 Corp'",
-    "'-1'"
+    "123",
+    "Company",
+    "123 Corp",
+    "-1"
   ]
 }"""
 
@@ -83,7 +83,7 @@ delete_row_test_result = """{
     "negated": "FALSE",
     "column_name": "name",
     "comparator": "<>",
-    "value": "'joe'"
+    "value": "joe"
   }
 }"""
 
@@ -102,13 +102,13 @@ update_row_test_result = """{
     "operation_type": "SET",
     "column_name": "ContactName",
     "comparator": "=",
-    "value": "'Juan'"
+    "value": "Juan"
   },
   "condition": {
     "negated": "FALSE",
     "column_name": "Country",
     "comparator": "=",
-    "value": "'Mexico'"
+    "value": "Mexico"
   }
 }"""
 
@@ -142,7 +142,7 @@ select_test_result2= """{
     "negated": "FALSE",
     "column_name": "Country",
     "comparator": "=",
-    "value": "'Mexico'"
+    "value": "Mexico"
   }
 }"""
 

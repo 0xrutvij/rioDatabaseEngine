@@ -31,37 +31,53 @@ class PageNode:
         return overflow_list
 
     def update_record(self, update_op: Dict, condition: Dict):
+        """
+        Where operation and condition are of the form...
+        
+        operation = { "operation_type": "SET", "column_name": "FirstString", 
+        "column_ord": 0, "comparator": "=", "value": "Don Juan Quixote" }
+
+        Where value is an object of the correct type as defined in the DataType Enum
+        and matches the column type.
+
+        condition = { "negated": "FALSE", "column_name": "MiddleInt", 
+        "column_ord": 1, "comparator": "=", "value": 0 }
+        """
         # check for overflow by checking if the potential byte stream size exceeds 512
         # provide for a call back/ return mechanism which allows the tree structure to
         # deal with the overflow
-        raise NotImplementedError
+        overflow_list = []
+        self.records = Record.filter_update(self.records, update_op, condition)
+        while self.check_overflow():
+            overflow_list.append(self.records.pop())
+        
+        return overflow_list
 
 
     def delete_record(self, condition: Dict = None):
+        """
+        Condition is optional, and if provided is of the form
+
+        condition = { "negated": "FALSE", "column_name": "MiddleInt", 
+        "column_ord": 1, "comparator": "=", "value": 0 }
+        """
         if condition is None:
             self.records = []
         else:
-            pass
+            self.records = Record.filter_delete(self.records, condition)
 
-        raise NotImplementedError
+    def select_record(self, col_ord_list: List[int], condition: Dict = None) -> List[List]:
+        """
+        Column Ordinal List: Supplies the ordinal position of the columns to be selected
 
-    def select_record(self, col_name_list: List, condition: Dict = None):
-        sel_field = []
-        if condition is None:
-            sel_field = self.records
-        else:
-            # sel_field = filter self.records
-            pass
+        Condition is optional, and if provided is of the form
 
-        if not col_name_list:
-            # return all columns
-            pass
-        else:
-            # filter on columns and return 
-            pass
+        condition = { "negated": "FALSE", "column_name": "MiddleInt", 
+        "column_ord": 1, "comparator": "=", "value": 0 }
 
-        raise NotImplementedError
-
+        Returns: A list of list containing the values selected. 
+        """
+        return Record.filter_subset_select(self.records, col_ord_list, condition)
 
     def to_byte_stream(self):
         self.offsets = deque()
@@ -155,18 +171,59 @@ if __name__ == "__main__":
     ]
     
     rec_list = []
-    for i in range(20):
+    for i in range(18):
+        dv = data_values.copy()
+        dv[1] *= i
         ex_c = Record(
             i,
             np.uint8(3),
             data_types.copy(),
-            data_values.copy()
+            dv
         )
         rec_list.append(ex_c)
 
     for ex_c in rec_list:
         ret_val = example.add_record(ex_c)
-        print(ret_val or None)
-    
+        #print(ret_val or None)
+
+    example.update_record(
+        {
+            "operation_type": "SET",
+            "column_name": "FirstString",
+            "column_ord": 0,
+            "comparator": "=",
+            "value": "Don Juan Quixote"
+        },
+        {
+            "negated": "FALSE",
+            "column_name": "MiddleInt",
+            "column_ord": 1,
+            "comparator": "=",
+            "value": 0
+        }
+    )
+
+    sel_list = example.select_record([], {
+        "negated": "TRUE",
+        "column_name": "FirstString",
+        "column_ord": 0,
+        "comparator": "=",
+        "value": "Don Juan Quixote"
+    })
+    # all columns for record where FirstString isn't "Don Juan ...""
+    print(sel_list)
+
+    # first string is not equal to value "Don Juan ..."
+    example.delete_record(condition={
+            "negated": "TRUE",
+            "column_name": "FirstString",
+            "column_ord": 0,
+            "comparator": "=",
+            "value": "Don Juan Quixote"
+    })
+
     with open("len_check.hex", "wb") as op:
         op.write(example.to_byte_stream())
+
+    y = PageNode.from_byte_stream(example.to_byte_stream(), 1)
+    assert example == y

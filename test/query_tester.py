@@ -51,6 +51,7 @@ class parsingTest(unittest.TestCase):
     def test_row_updates(self):
         res = qp.update_record_stmt.parse_string(qtc.update_row_test_case)
         res_jstr = json.dumps(res[0], indent="  ")
+        print(res_jstr)
         self.assertEqual(res_jstr, qtc.update_row_test_result)
 
     def test_select_star_where(self):
@@ -67,4 +68,3 @@ class parsingTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-        
