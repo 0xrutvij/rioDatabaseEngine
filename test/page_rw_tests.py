@@ -4,11 +4,12 @@ import os
 import sys
 import unittest
 import numpy as np
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src/file_abstractions")
 
-
+from record import Record
+from page_node import PageNode
 from enums import DataType
-from file_abstraction import Record, PageHeader, PageNode
+from header import PageHeader
 
 
 class FileAbstractDevTests(unittest.TestCase):

@@ -24,24 +24,50 @@ def swtich_and_delegate(parse_dict: Dict):
 
 
 def create_table(table_name: str, column_list: List[Dict]):
+    # should create a new b+ tree object in memory
     raise NotImplementedError
 
 def create_index(table_name: str, column_name: str):
+    # should create a new b tree object in memory
     raise NotImplementedError
 
 def drop_table(table_name: str):
+    # should delete the b+ object associated with the table name.
     raise NotImplementedError
 
 def insert_row(table_name: str, column_name_list: List[str], value_list: List[str]):
+    # should query the B+ tree object, use B+ insertion algo and locate the node
+    # node should be able to locate correct location in list
+        # if no overflow, store it in node 
+            # AND update cell count.
+            # before storage validate type, else raise Syntax or Type Exception
+        # else should be able to propogate the overflow via the B+ object
+            # repeat the above process at new node after the internal state is updated.
     raise NotImplementedError
 
 def delete_row(table_name: str, condition: Dict):
+    # should query the B+ tree object, use B+ deletion algo and locate the node
+    # node should be able to locate correct location in list
+        # and delete the row based on condition if any
+            # AND update cell count.
+    # NOTE: multiple page nodes could have deleted rows and there should be support for it.
     raise NotImplementedError
 
 def update_row(table_name: str, operation: Dict, condition: Dict):
+    # should query the B+ tree object, use B+ search algo and locate the node
+    # node should be able to locate correct location in list
+        # if no overflow, store it in node 
+            # before storage validate type, else raise Syntax or Type Exception
+        # else should be able to propogate the overflow via the B+ object
+            # repeat the above process at new node after the internal state is updated.
+    # NOTE: multiple page nodes could need row update and there should be support for it.
     raise NotImplementedError
 
 def select_rows(table_name: str, column_name_list: List[str], condition: Dict):
+    # should query the B+ tree object, use B+ search algo and locate the nodes
+    # node should be able to locate correct location in list
+        # and return it
+    # NOTE: multiple page nodes could return rows and there should be support for it.
     raise NotImplementedError
 
 DEFINED_CLAUSES = {
