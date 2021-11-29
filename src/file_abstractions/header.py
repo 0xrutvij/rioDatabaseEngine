@@ -22,6 +22,7 @@ def int_to_byte_stream(int_like_val: Any, size: int):
         
 
 def big_endian_int(byte_st: bytes):
+    # TODO: test for negative values
     return int.from_bytes(byte_st, "big")
 
 
@@ -84,3 +85,6 @@ class PageHeader:
 
         return base_obj
 
+
+if __name__ == "__main__":
+    page_header_obj = PageHeader.default_header()

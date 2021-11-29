@@ -186,6 +186,9 @@ if __name__ == "__main__":
         ret_val = example.add_record(ex_c)
         #print(ret_val or None)
 
+    with open("page_insert.hex", "wb") as op:
+        op.write(example.to_byte_stream())
+
     example.update_record(
         {
             "operation_type": "SET",
@@ -203,6 +206,9 @@ if __name__ == "__main__":
         }
     )
 
+    with open("page_update.hex", "wb") as op:
+        op.write(example.to_byte_stream())
+
     sel_list = example.select_record([], {
         "negated": "TRUE",
         "column_name": "FirstString",
@@ -211,6 +217,7 @@ if __name__ == "__main__":
         "value": "Don Juan Quixote"
     })
     # all columns for record where FirstString isn't "Don Juan ...""
+    # ["FirstString", "MiddleInt", "LastString"]
     print(sel_list)
 
     # first string is not equal to value "Don Juan ..."
@@ -222,7 +229,7 @@ if __name__ == "__main__":
             "value": "Don Juan Quixote"
     })
 
-    with open("len_check.hex", "wb") as op:
+    with open("page_delete.hex", "wb") as op:
         op.write(example.to_byte_stream())
 
     y = PageNode.from_byte_stream(example.to_byte_stream(), 1)
