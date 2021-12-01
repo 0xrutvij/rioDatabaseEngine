@@ -111,7 +111,10 @@ class BPlusTree:
         median_key = leaf_node.keys[t]
         split_node.keys = leaf_node.keys[:t+1]
         leaf_node.keys = leaf_node.keys[t+1:]
-        
+
+        if leaf_node.prev:
+            leaf_node.prev.next = split_node
+
         split_node.prev = leaf_node.prev
         split_node.next = leaf_node
         leaf_node.prev = split_node
@@ -142,11 +145,21 @@ class BPlusTree:
 if __name__ == "__main__":
     tree = BPlusTree(6)
 
+    random.seed(1)
+
     ls_nums = list(range(20))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
         tree.bptree_insert(i)
-        tree.show_tree()
+    
+    tree.show_tree()
+
+    n, i = tree.bptree_search(19)
+
+    while n:
+        print(n.keys)
+        n = n.prev
+    
 
     
