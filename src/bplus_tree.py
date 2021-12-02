@@ -1,22 +1,27 @@
 from __future__ import annotations
 import bisect
+import copy
+from os import stat
 import random
-from typing import Tuple, Union
+import traceback
+from typing import List, NewType, Tuple, Union
+
+from numpy import less
 
 from btree import DataPointer, Node
-    
+#sys.stdout = open('file', 'w')
 
 class BPlusNode(Node):
     def __init__(self, leaf: bool, parent: Node) -> None:
         super().__init__(leaf)
+        self.pointers: List[BPlusNode] = []
         self.parent: BPlusNode = parent
         self.next: BPlusNode = None
         self.prev: BPlusNode = None
 
 class BPlusTree:
 
-    def __init__(self, arity: int) -> None:
-        BPlusNode.MIN_DEG = arity/2 if arity >= 6 else 3
+    def __init__(self) -> None:
         self.root = BPlusNode(True, None)
 
     def bptree_search(self, key: Union[DataPointer, int]):
@@ -30,15 +35,16 @@ class BPlusTree:
         i = 0
         n = len(node.keys)
 
-        while i < n and key > node.keys[i]:
-            i += 1
-
         if node.is_leaf:
+            while i < n and key > node.keys[i]:
+                i += 1
             if i < n and key == node.keys[i]:
                 return (node, i)
             else:
                 return (node, None)
         else:
+            while i < n and key >= node.keys[i]:
+                i += 1
             return self._search(node.pointers[i], key)
 
     def bptree_insert(self, entry: Union[DataPointer, int]) -> None:
@@ -89,15 +95,15 @@ class BPlusTree:
         split_node = BPlusNode(False, internal_node.parent)
         t = BPlusNode.min_ptr_degree()
 
-        median_key = internal_node.keys[t+1]
-        split_node.keys = internal_node.keys[:t+1]
-        split_node.pointers = internal_node.pointers[:t+2]
+        median_key = internal_node.keys[t]
+        split_node.keys = internal_node.keys[:t]
+        split_node.pointers = internal_node.pointers[:t+1]
 
         for ptr in split_node.pointers:
             ptr.parent = split_node
 
-        internal_node.keys = internal_node.keys[t+2:]
-        internal_node.pointers = internal_node.pointers[t+2:]
+        internal_node.keys = internal_node.keys[t+1:]
+        internal_node.pointers = internal_node.pointers[t+1:]
 
         return (median_key, split_node, internal_node)
 
@@ -109,8 +115,9 @@ class BPlusTree:
         t = BPlusNode.min_ptr_degree()
 
         median_key = leaf_node.keys[t]
-        split_node.keys = leaf_node.keys[:t+1]
-        leaf_node.keys = leaf_node.keys[t+1:]
+        median_key = median_key.id if isinstance(median_key, DataPointer) else median_key
+        split_node.keys = leaf_node.keys[:t]
+        leaf_node.keys = leaf_node.keys[t:]
 
         if leaf_node.prev:
             leaf_node.prev.next = split_node
@@ -121,8 +128,156 @@ class BPlusTree:
 
         return (median_key, split_node, leaf_node)
         
+    def bptree_delete(self, key: int):
+        val_loc, idx = self._search(self.root, key)
 
-   
+        if idx is None:
+            print(val_loc.keys)
+            raise KeyError(f"Key {key} not in tree.")
+
+        val_loc.keys.remove(key)
+
+        if self._node_is_underflow(val_loc) and val_loc.parent:
+            vparent = val_loc.parent
+            ptr_idx = vparent.pointers.index(val_loc)
+            left_sib = vparent.pointers[ptr_idx - 1] if ptr_idx - 1 >= 0 else None
+            right_sib = vparent.pointers[ptr_idx + 1] if ptr_idx + 1 < len(vparent.pointers) else None
+            transfer_max = BPlusNode.min_ptr_degree() + 1
+
+            if right_sib and len(right_sib.keys) <= transfer_max:
+                val_loc.keys += right_sib.keys
+                vparent.pointers.pop(ptr_idx + 1)
+                vparent.keys.pop(ptr_idx)
+
+            elif left_sib and len(left_sib.keys) <= transfer_max:
+                left_sib.keys += val_loc.keys
+                vparent.pointers.pop(ptr_idx)
+                vparent.keys.pop(ptr_idx - 1)
+
+            elif right_sib and len(right_sib.keys) > transfer_max:
+
+                while self._node_is_underflow(val_loc) and not self._node_is_underflow(right_sib):
+                    pull_key = right_sib.keys.pop(0)
+                    val_loc.keys.append(pull_key)
+                    vparent.keys[ptr_idx] = right_sib.keys[0].id if isinstance(right_sib.keys[0], DataPointer) else right_sib.keys[0]
+
+            elif left_sib and len(left_sib.keys) > transfer_max:
+
+                while self._node_is_underflow(val_loc) and not self._node_is_underflow(left_sib):
+                    pull_key = left_sib.keys.pop()
+                    val_loc.keys.insert(0, pull_key)
+                    vparent.keys[ptr_idx - 1] = pull_key.id if isinstance(pull_key, DataPointer) else pull_key
+
+            if self._node_is_underflow(vparent):
+                self._fuse_or_share_internal(vparent)
+            else:
+                return True
+        else:
+            return True
+
+
+    def _fuse_or_share_internal(self, node: BPlusNode):
+
+        if gp := node.parent:
+            idx = gp.pointers.index(node)
+            ls = gp.pointers[idx-1] if idx - 1 >= 0 else None
+            rs = gp.pointers[idx+1] if idx + 1 < len(gp.pointers) else None
+            transfer_max = BPlusNode.min_ptr_degree() + 1
+
+            if rs and len(rs.keys) <= transfer_max:
+                median_key = gp.keys.pop(idx)
+                gp.pointers.pop(idx+1)
+                node.keys = node.keys + [median_key] + rs.keys
+                for ptr in rs.pointers:
+                    ptr.parent = node
+                node.pointers.extend(rs.pointers)
+
+            elif ls and len(ls.keys) <= transfer_max:
+                median_key = gp.keys.pop(idx-1)
+                gp.pointers.pop(idx)
+                ls.keys = ls.keys + [median_key] + node.keys
+                for ptr in node.pointers:
+                    ptr.parent = ls
+                ls.pointers.extend(node.pointers)
+
+            elif rs and len(rs.keys) > transfer_max:
+
+                while self._node_is_underflow(node) and not self._node_is_underflow(rs):
+                    pull_ptr = rs.pointers.pop(0)
+                    pull_key = rs.keys.pop(0)
+                    node.keys.append(gp.keys[idx])
+                    pull_ptr.parent = node
+                    node.pointers.append(pull_ptr)
+                    gp.keys[idx] = pull_key
+
+            elif ls and len(ls.keys) > transfer_max:
+
+                while self._node_is_underflow(node) and not self._node_is_underflow(ls):
+                    pull_ptr = ls.pointers.pop()
+                    pull_key = ls.keys.pop()
+                    node.keys.insert(0, gp.keys[idx-1])
+                    pull_ptr.parent = node
+                    node.pointers.insert(0, pull_ptr)
+                    gp.keys[idx-1] = pull_key
+
+            if self._node_is_underflow(gp):
+                self._fuse_or_share_internal(gp)
+
+        elif len(node.keys) == 0:
+            new_root = node.pointers.pop()
+            new_root.parent = None
+            self.root = new_root
+
+    @staticmethod
+    def _borrow_left_internal(node: BPlusNode, left_sib: BPlusNode):
+        pass
+
+    @staticmethod
+    def _borrow_right_internal(node: BPlusNode, right_sib: BPlusNode):
+        pass
+
+    @staticmethod
+    def _merge_internal(left: BPlusNode, median_key: int, right: BPlusNode):
+        pass
+
+    @staticmethod
+    def _borrow_left_leaf(node: BPlusNode, left_sib: BPlusNode):
+        if left_sib and BPlusTree._is_more_than_half(left_sib) and left_sib.is_leaf:
+            new_key = left_sib.keys.pop()
+            node.keys.insert(0, new_key)
+            return True
+        
+        return False
+
+
+    @staticmethod
+    def _borrow_right_leaf(node: BPlusNode, right_sib: BPlusNode):
+        if right_sib and BPlusTree._is_more_than_half(right_sib) and right_sib.is_leaf:
+            new_key = right_sib.keys.pop(0)
+            node.keys.append(new_key)
+            return True
+        
+        return False
+
+    @staticmethod
+    def _merge_leaves(left: BPlusNode, right: BPlusNode):
+        
+        left.next = right.next
+        if right.next:
+            right.next.prev = left
+        
+        left.keys += right.keys
+        return 
+
+    @staticmethod
+    def _node_is_underflow(node: BPlusNode):
+        return len(node.keys) < BPlusNode.min_ptr_degree()
+
+    @staticmethod
+    def _is_more_than_half(node: BPlusNode):
+        return len(node.keys) > BPlusNode.min_ptr_degree()
+
+
     def show(self, node: BPlusNode, _prefix="", _last=True):
 
         if node.is_leaf:
@@ -143,23 +298,41 @@ class BPlusTree:
     
                 
 if __name__ == "__main__":
-    tree = BPlusTree(6)
+    tree = BPlusTree()
 
     random.seed(1)
 
-    ls_nums = list(range(20))
+    ls_nums = list(range(30000))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
-        tree.bptree_insert(i)
-    
-    tree.show_tree()
+        dp = DataPointer(int.__int__, i)
+        tree.bptree_insert(dp)
+        # tree.show_tree()
 
-    n, i = tree.bptree_search(19)
+    random.shuffle(ls_nums)
+    """
+    for i in ls_nums:
+        try:
+            if i == 3827 or i == 3814:
+                tree.show_tree()
+            tree.btree_delete(i)
+        except Exception as e:
+            print(f"\n\n\n Num is {i} \n")
+            print(traceback.format_exc())
+            tree.show_tree()
+            break
 
-    while n:
-        print(n.keys)
-        n = n.prev
-    
+    # tree.show_tree()
+    """
+    for i in ls_nums:
+        #print(f"\n\nDeleting key {i}:")
+        try:
+            tree.bptree_delete(i)
+        except:
+            traceback.print_exc()
+            tree.show_tree()
 
-    
+            break
+        
+    #tree.show_tree()

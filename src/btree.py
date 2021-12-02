@@ -2,7 +2,6 @@ from __future__ import annotations
 from functools import total_ordering
 from typing import Callable, Generic, List, Tuple, TypeVar, Union
 import random
-from typing_extensions import runtime
 T = TypeVar("T")
 
 
@@ -31,7 +30,7 @@ class DataPointer(Generic[T]):
 
 
 class Node:
-    MIN_DEG = 2
+    MIN_DEG = 3
 
     def __init__(self, leaf: bool) -> None:
         self.keys: List[Union[DataPointer, int]] = []
@@ -49,8 +48,7 @@ class Node:
 
 class BTree:
 
-    def __init__(self, arity:int = 6) -> None:
-        Node.MIN_DEG = arity/2 if arity >= 6 else 3
+    def __init__(self) -> None:
         self.root = Node(True)
         
     def btree_search(self, key: Union[DataPointer, int]):
@@ -129,11 +127,12 @@ class BTree:
 
     def _delete(self, node: Node, key: Union[DataPointer, int]):
 
+        self.show()
+
         i = 0
         n = len(node.keys)
         while i < n and key > node.keys[i]:
             i += 1
-
 
         # case 0 and case 1 ~ Leaf node
         if node.is_leaf:
@@ -143,6 +142,7 @@ class BTree:
                 return True
             # case 0
             else:
+                print(node.keys)
                 raise KeyError(f"Key {key} not found in B Tree!")
         # case 2, 3 or 4 ~ Internal Node
         else:
@@ -162,7 +162,7 @@ class BTree:
                     replacement_key = right_child.keys[0]
                     node.keys[i] = replacement_key
                     return self._delete(right_child, replacement_key)
-                # case 2(c) ~ left and right children are sparese --> merge them.
+                # case 2(c) ~ left and right children are sparse --> merge them.
                 else:
                     # pop right pointer
                     ptr_to_merge = node.pointers.pop(i+1)
@@ -244,20 +244,24 @@ if __name__ == "__main__":
 
     tree = BTree()
 
-    ls_nums = list(range(20))
+    random.seed(1)
+
+    ls_nums = list(range(30))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
         tree.btree_insert(i)
+
+    """tree.show()
         
-    tree.show()
-
-    tree.btree_delete(1)
-
-    ls_nums.remove(1)
-
-    tree.show()
-
     for num in ls_nums:
+        print(f"Deleting number {num}")
         tree.btree_delete(num)
-        tree.show()
+        tree.show()"""
+
+    tree.btree_delete(26)
+
+
+    print("\n"*5)
+
+    tree.btree_delete(16)
