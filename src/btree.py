@@ -127,8 +127,6 @@ class BTree:
 
     def _delete(self, node: Node, key: Union[DataPointer, int]):
 
-        self.show()
-
         i = 0
         n = len(node.keys)
         while i < n and key > node.keys[i]:
@@ -154,12 +152,12 @@ class BTree:
 
                 # case 2(a) ~ left child has fill to supply replacement
                 if self._check_fill(left_child):
-                    replacement_key = left_child.keys[-1]
+                    replacement_key = self._find_left_predecessor_val(left_child)
                     node.keys[i] = replacement_key
                     return self._delete(left_child, replacement_key)
                 # case 2(b) ~ right child has fill to supply replacement
                 elif self._check_fill(right_child):
-                    replacement_key = right_child.keys[0]
+                    replacement_key = self._find_right_successor_val(right_child)
                     node.keys[i] = replacement_key
                     return self._delete(right_child, replacement_key)
                 # case 2(c) ~ left and right children are sparse --> merge them.
@@ -185,7 +183,9 @@ class BTree:
                     x_replacement = left_sibling.keys.pop()
                     x_donation = node.keys[i-1]
                     node.keys[i-1] = x_replacement
-                    self._insert_non_full(recurse_node, x_donation)
+                    recurse_node.keys.insert(0, x_donation)
+                    if len(left_sibling.pointers) > 0:
+                        recurse_node.pointers.insert(0, left_sibling.pointers.pop())
                     return self._delete(recurse_node, key)
                 # case 3(a) - right sibling
                 elif right_sibling and self._check_fill(right_sibling):
@@ -193,7 +193,9 @@ class BTree:
                     x_replacement = right_sibling.keys.pop(0)
                     x_donation = node.keys[i]
                     node.keys[i] = x_replacement
-                    self._insert_non_full(recurse_node, x_donation)
+                    recurse_node.keys.append(x_donation)
+                    if not right_sibling.is_leaf:
+                        recurse_node.pointers.append(right_sibling.pointers.pop(0))
                     return self._delete(recurse_node, key)
                 # case 3(c) - sparse siblings
                 else:
@@ -222,7 +224,19 @@ class BTree:
         return len(node.keys) >= Node.min_ptr_degree()
 
 
-        
+    @staticmethod
+    def _find_left_predecessor_val(node: Node):
+        if not node.is_leaf:
+            return BTree._find_left_predecessor_val(node.pointers[-1])
+        else:
+            return node.keys[-1]
+
+    @staticmethod
+    def _find_right_successor_val(node: Node):
+        if not node.is_leaf:
+            return BTree._find_right_successor_val(node.pointers[0])
+        else:
+            return node.keys[0]
 
     def show(self):
         self._print_tree(self.root, prefix="", last=True)
@@ -246,22 +260,14 @@ if __name__ == "__main__":
 
     random.seed(1)
 
-    ls_nums = list(range(30))
+    ls_nums = list(range(3000))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
         tree.btree_insert(i)
 
-    """tree.show()
-        
-    for num in ls_nums:
-        print(f"Deleting number {num}")
-        tree.btree_delete(num)
-        tree.show()"""
-
-    tree.btree_delete(26)
-
-
+    tree.show()
     print("\n"*5)
-
-    tree.btree_delete(16)
+    for num in ls_nums:
+        tree.btree_delete(num)
+        tree.show()
