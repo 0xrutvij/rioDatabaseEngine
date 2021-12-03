@@ -24,8 +24,16 @@ class DataPointer(Generic[T]):
         return self.id == other.id
 
     def __repr__(self) -> str:
+        try:
+            data_repr = str(self.data)
+        except:
+            data_repr = "..."
+        finally:
+            if len(data_repr) > 10:
+                data_repr = "..."
+
         return (
-            f"[ID: {self.id}, DATA: {self.data}]"
+            f"[ID: {self.id} DATA: {data_repr} ]"
         )
 
 
@@ -51,7 +59,7 @@ class BTree:
     def __init__(self) -> None:
         self.root = Node(True)
         
-    def btree_search(self, key: Union[DataPointer, int]):
+    def search(self, key: Union[DataPointer, int]):
         return self._search(self.root, key)
 
     def _search(self, node: Node, key: Union[DataPointer, int]) -> Tuple[Node, int]:
@@ -68,7 +76,7 @@ class BTree:
         else:
             return self._search(node.pointers[i], key)
 
-    def btree_insert(self, key: Union[DataPointer, int]):
+    def insert(self, key: Union[DataPointer, int]):
         current_root = self.root
 
         if len(current_root.keys) == Node.max_ptr_degree() - 1:
@@ -120,7 +128,7 @@ class BTree:
             
             self._insert_non_full(node.pointers[i], key)
 
-    def btree_delete(self, key: Union[DataPointer, int]):
+    def delete(self, key: Union[DataPointer, int]):
         self._delete(self.root, key)
         if len(self.root.keys) == 0 and not self.root.is_leaf:
             self.root = self.root.pointers.pop()
@@ -260,14 +268,15 @@ if __name__ == "__main__":
 
     random.seed(1)
 
-    ls_nums = list(range(3000))
+    ls_nums = list(range(30000))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
-        tree.btree_insert(i)
+        tree.insert(i)
 
-    tree.show()
+    #tree.show()
     print("\n"*5)
     for num in ls_nums:
-        tree.btree_delete(num)
-        tree.show()
+        tree.delete(num)
+        
+    tree.show()

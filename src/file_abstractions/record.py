@@ -6,7 +6,7 @@ import numpy as np
 from dataclasses import dataclass
 from functools import total_ordering
 from itertools import filterfalse
-from typing import Dict, List
+from typing import Dict, List, Union
 from operator import lt, gt, eq, ne, ge, le, itemgetter
 
 from header import int_to_byte_stream, big_endian_int
@@ -36,6 +36,9 @@ class Record:
     num_columns: np.uint8
     data_types: List[DataType]
     data_values: List
+
+    def get_id(self):
+        return self.row_id
 
     def _cell_payload_byte_stream(self):
         
@@ -105,10 +108,19 @@ class Record:
             raise TypeError(f"{rval} isn't a valid value for {col_name} of type {type_.value[0]}")
 
 
-    def __lt__(self, other):
+    def __lt__(self, other: Union[Record, int]):
+        
+        if isinstance(other, int):
+            self.row_id < other
+        
         return self.row_id < other.row_id
+        
 
-    def __eq__(self, __o: object) -> bool:
+    def __eq__(self, __o: Union[Record, int]) -> bool:
+        
+        if isinstance(__o, int):
+            return self.row_id == __o
+        
         return self.row_id == __o.row_id
 
     @classmethod

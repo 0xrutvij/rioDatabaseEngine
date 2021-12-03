@@ -24,7 +24,7 @@ class BPlusTree:
     def __init__(self) -> None:
         self.root = BPlusNode(True, None)
 
-    def bptree_search(self, key: Union[DataPointer, int]):
+    def search(self, key: Union[DataPointer, int]):
         (node, idx) = self._search(self.root, key)
         if idx is None:
             raise KeyError(f"Key {key} not found in B+ Tree!")
@@ -47,7 +47,7 @@ class BPlusTree:
                 i += 1
             return self._search(node.pointers[i], key)
 
-    def bptree_insert(self, entry: Union[DataPointer, int]) -> None:
+    def insert(self, entry: Union[DataPointer, int]) -> None:
         insertion_leaf, _ = self._search(self.root, entry)
         max_key_fill = BPlusNode.max_ptr_degree() - 1
 
@@ -128,7 +128,7 @@ class BPlusTree:
 
         return (median_key, split_node, leaf_node)
         
-    def bptree_delete(self, key: int):
+    def delete(self, key: int):
         val_loc, idx = self._search(self.root, key)
 
         if idx is None:
@@ -307,7 +307,7 @@ if __name__ == "__main__":
 
     for i in ls_nums:
         dp = DataPointer(int.__int__, i)
-        tree.bptree_insert(dp)
+        tree.insert(dp)
         # tree.show_tree()
 
     random.shuffle(ls_nums)
@@ -328,7 +328,7 @@ if __name__ == "__main__":
     for i in ls_nums:
         #print(f"\n\nDeleting key {i}:")
         try:
-            tree.bptree_delete(i)
+            tree.delete(i)
         except:
             traceback.print_exc()
             tree.show_tree()

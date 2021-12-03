@@ -1,3 +1,9 @@
+"""
+This class will only be used to convert a BPlusNode to a disk writable byte stream
+and vice versa.
+
+TODO: The CRUD methods need to be removed.
+"""
 from collections import deque
 from dataclasses import dataclass
 import io
@@ -176,7 +182,7 @@ if __name__ == "__main__":
         dv[1] *= i
         ex_c = Record(
             i,
-            np.uint8(3),
+            num_columns,
             data_types.copy(),
             dv
         )
