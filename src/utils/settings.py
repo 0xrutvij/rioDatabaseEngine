@@ -7,8 +7,8 @@ class objectless(object):
 class Settings(objectless):
     """Never to be instantiated."""
     _prompt = "davisql> "
-    _version = "1.2"
-    _copyright = "©2020 Chris Irwin Davis"
+    _version = "0.1"
+    _copyright = "©2021 Rio DB Group"
     _is_exit = False
     _page_size = 512
 

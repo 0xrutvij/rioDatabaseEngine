@@ -44,6 +44,10 @@ class DataType(Enum):
         return mapping
 
     @classmethod
+    def from_type_name(cls, type_name: str):
+        return cls._member_map_.get(type_name, None)
+
+    @classmethod
     def from_id_byte(cls, big_endian_int: bytes):
         typing_map = cls.type_id_to_type_mapping()
         x = int.from_bytes(big_endian_int, "big")

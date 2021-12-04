@@ -50,7 +50,15 @@ drop_table_test_result = """{
 
 ######################################
 
-insert_row_test_case = """INSERT INTO 
+insert_row_test_case = """insert into table
+(c1, c2, c3)
+test_table
+values
+("hello world", "fingers crossed", 1);
+"""
+
+
+"""INSERT INTO 
   TABLE (organisation_id, name, organisation_type, parent_organisation_id) 
   organisation 
   VALUES ('123','Company','123 Corp','-1');"""

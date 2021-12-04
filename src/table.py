@@ -37,6 +37,47 @@ class Table:
         self.record_count = 0
         self.name = ""
 
+    @classmethod
+    def create_table(cls, create_op: Dict, page_size=512) -> Table:
+        """
+        { "table_name": "new_table",
+          "column_list": [
+              {
+                "column_key": "UNI", "is_nullable": "NO", 
+                "column_name": "column_name1", "data_type": "INT", "ordinal_position": 1,
+                "table_name": "new_table"
+              }, 
+              ...
+            ]
+        }
+        """
+        new_table = cls(page_size)
+
+        col_list: List = create_op["column_list"]
+        col_list.sort(key=lambda x: x.get("ordinal_position", 0))
+
+        column_data_init = {
+            "column_names": [],
+            "data_types": [],
+            "nullability": [],
+            "column_keys": []
+        }
+
+        for column in col_list:
+            column_data_init["column_keys"].append(column["column_key"])
+            column_data_init["nullability"].append(column["is_nullable"])
+            column_data_init["column_names"].append(column["column_name"])
+            dtype_enum = DataType.from_type_name(column["data_type"])
+            column_data_init["data_types"].append(dtype_enum)
+
+        new_table.update_metadata(
+            column_data=column_data_init,
+            record_count=0,
+            name=create_op["table_name"]
+        )
+
+        return new_table
+
     def update_metadata(self, column_data: Dict, record_count: int, name: str):
         # TODO: set up methods for retrieving info
         if COL_DATA_KEYS.difference(set(column_data.keys())) == set():
@@ -46,7 +87,6 @@ class Table:
 
         else:
             print("Missing column data, update failed.")
-
 
     @classmethod
     def from_byte_stream(cls, byte_stream: bytes) -> Table:
@@ -66,7 +106,6 @@ class Table:
         # saving the file to disk
         # TODO: add logging and backup mechanism for failure protection
         raise NotImplementedError
-
 
     def insert(self, insert_dict: Dict) -> int:
         """
@@ -89,22 +128,24 @@ class Table:
         try:
             self._validate_insert_types(insertion_values)
         except Exception as e:
-            print(traceback.format_exception_only(e.__class__, e)[-1])
+            traceback.print_exception()
+            # print(traceback.format_exception_only(e.__class__, e)[-1])
             return
-
+        
         insertion_record = Record(
             self.record_count,
             np.uint8(len(all_columns)),
             self.column_data["data_types"],
             insertion_values
         )
+
+        if not self._validate_record_size(insertion_record):
+            raise OverflowError(f"Record with values {insertion_values} exceeds maximum permissible record byte size of {self.max_rec_size}")
+
         ptr_to_record = DataPointer[Record](Record.get_id, insertion_record)
         self.bptree.insert(ptr_to_record)
         self.record_count += 1
         return self.record_count
-
-        
-        
 
     def update(self, update_op: Dict, condition: Dict) -> None:
         """
@@ -127,6 +168,12 @@ class Table:
         if "column_ord" not in update_op and update_op:
             update_op["column_ord"] = self._column_name_to_ord(update_op["column_name"])
 
+        try:
+            _ = self._validate_update_types(update_op) and self._validate_condition(condition)
+        except Exception as e:
+            print(traceback.format_exception_only(e.__class__, e)[-1])
+            return
+
         # check if an index exists for the condition col (name/ord)
         if False:
             # TODO: Change condition.
@@ -140,20 +187,30 @@ class Table:
             # once leaf found, apply update/s
             current_leaf = self._find_first_record()
 
+            keys_to_update = []
+            record_refs_agg = []
+
             # let the leaf decide whether the update is necessary.
             while current_leaf:
                 record_refs = [key.data for key in current_leaf.keys]
 
                 updated_refs = Record.filter_update(record_refs, update_op, condition)
 
-                for key, rec in zip(current_leaf.keys, updated_refs):
-                    key.data = rec
+                for rec in updated_refs:
+                    if not self._validate_record_size(rec):
+                        raise OverflowError(f"Record with values {rec.data_values} exceeds maximum"
+                                            f" permissible record byte size of {self.max_rec_size}")
+
+                keys_to_update.extend(current_leaf.keys)
+                record_refs_agg.extend(updated_refs)
 
                 # keep applying update to each leaf by calling leaf.next!
                 current_leaf = current_leaf.next
+
+            for key, rec in zip(keys_to_update, record_refs_agg):
+                    key.data = rec
         
         return
-
 
     def delete(self, condition: Dict = None):
         """
@@ -169,37 +226,42 @@ class Table:
         # if no condition, clear all records.
         if condition is None:
             self.bptree = BPlusTree()
-        else:
-            if False:
-                pass
-                # TODO: index methods ...
-            else:
-                current_leaf = self._find_first_record()
-
-                ids_to_delete = set()
-
-                while current_leaf:
-                    record_refs = [key.data for key in current_leaf.keys]
-                    record_id_set = set(key.id for key in current_leaf.keys)
-
-                    updated_refs = Record.filter_delete(record_refs, condition)
-
-                    retained_id_set = {ref.get_id():ref for ref in updated_refs}
-
-                    ids_to_delete.update(record_id_set.difference(retained_id_set))
-
-                    for key in current_leaf.keys:
-                        if key.id in retained_id_set:
-                            key.data = retained_id_set[key.id]
-
-                    # keep applying update to each leaf by calling leaf.next!
-                    current_leaf = current_leaf.next
-
-                for id in ids_to_delete:
-                    self.bptree.delete(id)
         
+        try:
+            self._validate_condition(condition)
+        except Exception as e:
+            print(traceback.format_exception_only(e.__class__, e)[-1])
             return
 
+        if False:
+            pass
+            # TODO: index methods ...
+        else:
+            current_leaf = self._find_first_record()
+
+            ids_to_delete = set()
+
+            while current_leaf:
+                record_refs = [key.data for key in current_leaf.keys]
+                record_id_set = set(key.id for key in current_leaf.keys)
+
+                updated_refs = Record.filter_delete(record_refs, condition)
+
+                retained_id_set = {ref.get_id():ref for ref in updated_refs}
+
+                ids_to_delete.update(record_id_set.difference(retained_id_set))
+
+                for key in current_leaf.keys:
+                    if key.id in retained_id_set:
+                        key.data = retained_id_set[key.id]
+
+                # keep applying update to each leaf by calling leaf.next!
+                current_leaf = current_leaf.next
+
+            for id in ids_to_delete:
+                self.bptree.delete(id)
+        
+        return
 
     def select(self, selection_dict: Dict) -> List[List]:
         """
@@ -237,8 +299,7 @@ class Table:
                 
                 current_leaf = current_leaf.next
 
-        return selections
-
+        return selections, selection_dict["column_name_list"] or self.column_data["column_names"]
 
     def _column_name_list_to_ord(self, name_list: List[str] = []) -> List[int]:
 
@@ -253,7 +314,6 @@ class Table:
         else:
             raise NameError(f"One of the column names in {name_list} not found in table {self.name}")
 
-
     def _column_name_to_ord(self, col_name: str) -> int:
         existing_cols = self.column_data["column_names"]
         
@@ -263,13 +323,14 @@ class Table:
             raise NameError(f"Column Name {col_name} not found in table {self.name}.")
 
     def _validate_insert_types(self, value_list: List[Any]) -> bool:
+        """
+        Function has side-effect, modifies the value_list.
+        """
 
         names = self.column_data["column_names"]
         types = self.column_data["data_types"]
         nullables = self.column_data["nullability"]
         col_role = self.column_data["column_keys"]
-
-        
 
         for i, (typ, is_null, role, val) in enumerate(zip(types, nullables, col_role, value_list)):
             nv = self._validate_property_value_tuple(i, typ, is_null, role, val, names)
@@ -277,7 +338,7 @@ class Table:
             
         return True
 
-    def _validate_property_value_tuple(self, i, typ, is_null, role, val, names):
+    def _validate_property_value_tuple(self, i, typ, is_null, role, val, names, skip_uni=False):
         if val is None or val == b"" or val == "":
             if is_null == "YES":
                 return 
@@ -356,8 +417,8 @@ class Table:
         if not pred:
             raise ValueError(f"Column {names[i]} of type {typ_string} can't have the value {val}.")
 
-        if role == "UNI" or role == "PRI":
-            found = self.select({
+        if (role == "UNI" or role == "PRI") and not skip_uni:
+            found, _ = self.select({
                 "condition": {
                     "negated": "FALSE",
                     "column_name": names[i],
@@ -373,14 +434,57 @@ class Table:
 
         return new_val
 
+    def _validate_condition(self, condition: Dict) -> bool:
+        """
+        Function has side-effect, modifies the dictionary.
+        """
 
+        names = self.column_data["column_names"]
+        types = self.column_data["data_types"]
+        nullables = self.column_data["nullability"]
+        col_role = self.column_data["column_keys"]
+
+        condition = { "negated": "FALSE", "column_name": "MiddleInt", 
+        "column_ord": 1, "comparator": "=", "value": 0 }
+
+        c_ord = condition.get("column_ord", self._column_name_to_ord(condition["column_name"]))
+
+        typ = types[c_ord]
+        is_null = nullables[c_ord]
+        role = col_role[c_ord]
+        val = condition["value"]
+
+        new_val = self._validate_property_value_tuple(c_ord, typ, is_null, role, val, names, True)
+
+        condition["value"] = new_val
+
+        return True
 
     def _validate_update_types(self, update_op: Dict) -> bool:
-        # TODO: Implement
+        """
+        Function has side-effect, modifies the dictionary.
+        """
+
+        names = self.column_data["column_names"]
+        types = self.column_data["data_types"]
+        nullables = self.column_data["nullability"]
+        col_role = self.column_data["column_keys"]
+
+        c_ord = update_op.get("column_ord", self._column_name_to_ord(update_op["column_name"]))
+
+        typ = types[c_ord]
+        is_null = nullables[c_ord]
+        role = col_role[c_ord]
+        val = update_op["value"]
+
+        new_val = self._validate_property_value_tuple(c_ord, typ, is_null, role, val, names)
+
+        update_op["value"] = new_val
+        
         return True
 
     def _validate_record_size(self, rec: Record) -> bool:
-        return len(rec.to_byte_stream) <= self.max_rec_size
+        return len(rec.to_byte_stream()) <= self.max_rec_size
 
     def _find_first_record(self) -> BPlusNode:
         # search from uid min (0) up until the last assigned number
@@ -393,12 +497,6 @@ class Table:
         return None
 
     
-
-
-
-
-
-
 if __name__ == "__main__":
 
     data_values=[
@@ -407,36 +505,38 @@ if __name__ == "__main__":
         "scsc",
         dt.datetime.now().isoformat()
     ]
+
     col_names = [
         "FirstString",
         "MiddleInt",
         "LastString",
-        "Datetime"
+        "TimeOfCreation"
     ]
 
-    col_data = {    
-        "column_names": [
-            "FirstString",
-            "MiddleInt",
-            "LastString",
-            "Datetime"
-        ],
-        "data_types": [
-            DataType.TEXT,
-            DataType.INT,
-            DataType.TEXT,
-            DataType.DATETIME
-        ],
-        "nullability": ["NO", "NO", "NO", "NO"],
-        "column_keys": ["", "", "", "UNI"]
+    cop = {
+        "table_name": "test_table",
+        "column_list": [
+            {
+                "column_key": "", "is_nullable": "NO", 
+                "column_name": "FirstString", "data_type": "TEXT", "ordinal_position": 1
+            },
+            {
+                "column_key": "", "is_nullable": "NO", 
+                "column_name": "MiddleInt", "data_type": "INT", "ordinal_position": 2
+            },
+            {
+                "column_key": "", "is_nullable": "NO", 
+                "column_name": "LastString", "data_type": "TEXT", "ordinal_position": 3
+            },
+            {
+                "column_key": "UNI", "is_nullable": "NO", 
+                "column_name": "TimeOfCreation", "data_type": "DATETIME", "ordinal_position": 4
+            }
+        ]
     }
-    table_test = Table()
 
-    table_test.update_metadata(
-        column_data=col_data,
-        record_count=0,
-        name="table_test"
-    )
+
+    table_test = Table.create_table(create_op=cop)
 
     for i in range(10):
         dv = data_values.copy()
@@ -468,7 +568,7 @@ if __name__ == "__main__":
 
     print("\n\nExecuting Select Statement", end="\n\n")
 
-    selections = table_test.select({
+    selections, _ = table_test.select({
         "condition": {
             "negated": "TRUE",
             "column_name": "FirstString",

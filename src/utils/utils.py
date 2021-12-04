@@ -2,7 +2,7 @@ from settings import Settings
 from string import Template
 
 SEP_LINE = Settings.line("-", 78)
-DB_NAME = "DavisBaseLite"
+DB_NAME = "RioDBLite"
 WELC_MSG = f"Welcome to {DB_NAME}"
 VER_MSG = Template("$db_name Version $ver")
 HELP_MSG = "\nType \"help;\" to display supported commands."
