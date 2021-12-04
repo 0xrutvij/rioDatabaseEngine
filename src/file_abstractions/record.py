@@ -123,6 +123,9 @@ class Record:
         
         return self.row_id == __o.row_id
 
+    def __repr__(self) -> str:
+        return (f"{self.data_values}")
+
     @classmethod
     def from_byte_stream(cls, byte_stream: bytes):
         raw = io.BytesIO(byte_stream)

@@ -4,9 +4,7 @@ import copy
 from os import stat
 import random
 import traceback
-from typing import List, NewType, Tuple, Union
-
-from numpy import less
+from typing import List, Tuple, Union
 
 from btree import DataPointer, Node
 #sys.stdout = open('file', 'w')
@@ -21,8 +19,10 @@ class BPlusNode(Node):
 
 class BPlusTree:
 
-    def __init__(self) -> None:
+    def __init__(self, min_ptr_degree: int = 3) -> None:
         self.root = BPlusNode(True, None)
+        self.min_degree = max(min_ptr_degree, 3)
+
 
     def search(self, key: Union[DataPointer, int]):
         (node, idx) = self._search(self.root, key)
@@ -30,6 +30,12 @@ class BPlusTree:
             raise KeyError(f"Key {key} not found in B+ Tree!")
         else:
             return (node, idx)
+
+    def min_ptr_degree(self):
+        return self.min_degree
+
+    def max_ptr_degree(self):
+        return 2 * self.min_degree
 
     def _search(self, node: BPlusNode, key: Union[DataPointer, int]) -> Tuple[BPlusNode, int]:
         i = 0
@@ -49,7 +55,7 @@ class BPlusTree:
 
     def insert(self, entry: Union[DataPointer, int]) -> None:
         insertion_leaf, _ = self._search(self.root, entry)
-        max_key_fill = BPlusNode.max_ptr_degree() - 1
+        max_key_fill = self.max_ptr_degree() - 1
 
         if len(insertion_leaf.keys) >= max_key_fill:
             # split the leaf, recursively call insert on parent with copied key.
@@ -68,7 +74,7 @@ class BPlusTree:
             bisect.insort_left(insertion_leaf.keys, entry)
 
     def _insert_up(self, parent: BPlusNode, router: int, lc: BPlusNode):
-        max_key_fill = BPlusNode.max_ptr_degree() - 1
+        max_key_fill = self.max_ptr_degree() - 1
 
         if len(parent.keys) >= max_key_fill:
             # insert and split, propogate up recursively
@@ -93,7 +99,7 @@ class BPlusTree:
         internal_node.keys.insert(index, router)
 
         split_node = BPlusNode(False, internal_node.parent)
-        t = BPlusNode.min_ptr_degree()
+        t = self.min_ptr_degree()
 
         median_key = internal_node.keys[t]
         split_node.keys = internal_node.keys[:t]
@@ -112,7 +118,7 @@ class BPlusTree:
         bisect.insort_left(leaf_node.keys, entry)
 
         split_node = BPlusNode(True, leaf_node.parent)
-        t = BPlusNode.min_ptr_degree()
+        t = self.min_ptr_degree()
 
         median_key = leaf_node.keys[t]
         median_key = median_key.id if isinstance(median_key, DataPointer) else median_key
@@ -142,7 +148,7 @@ class BPlusTree:
             ptr_idx = vparent.pointers.index(val_loc)
             left_sib = vparent.pointers[ptr_idx - 1] if ptr_idx - 1 >= 0 else None
             right_sib = vparent.pointers[ptr_idx + 1] if ptr_idx + 1 < len(vparent.pointers) else None
-            transfer_max = BPlusNode.min_ptr_degree() + 1
+            transfer_max = self.min_ptr_degree() + 1
 
             if right_sib and len(right_sib.keys) <= transfer_max:
                 val_loc.keys += right_sib.keys
@@ -182,7 +188,7 @@ class BPlusTree:
             idx = gp.pointers.index(node)
             ls = gp.pointers[idx-1] if idx - 1 >= 0 else None
             rs = gp.pointers[idx+1] if idx + 1 < len(gp.pointers) else None
-            transfer_max = BPlusNode.min_ptr_degree() + 1
+            transfer_max = self.min_ptr_degree() + 1
 
             if rs and len(rs.keys) <= transfer_max:
                 median_key = gp.keys.pop(idx)
@@ -229,18 +235,6 @@ class BPlusTree:
             self.root = new_root
 
     @staticmethod
-    def _borrow_left_internal(node: BPlusNode, left_sib: BPlusNode):
-        pass
-
-    @staticmethod
-    def _borrow_right_internal(node: BPlusNode, right_sib: BPlusNode):
-        pass
-
-    @staticmethod
-    def _merge_internal(left: BPlusNode, median_key: int, right: BPlusNode):
-        pass
-
-    @staticmethod
     def _borrow_left_leaf(node: BPlusNode, left_sib: BPlusNode):
         if left_sib and BPlusTree._is_more_than_half(left_sib) and left_sib.is_leaf:
             new_key = left_sib.keys.pop()
@@ -269,13 +263,11 @@ class BPlusTree:
         left.keys += right.keys
         return 
 
-    @staticmethod
-    def _node_is_underflow(node: BPlusNode):
-        return len(node.keys) < BPlusNode.min_ptr_degree()
+    def _node_is_underflow(self, node: BPlusNode):
+        return len(node.keys) < self.min_ptr_degree()
 
-    @staticmethod
-    def _is_more_than_half(node: BPlusNode):
-        return len(node.keys) > BPlusNode.min_ptr_degree()
+    def _is_more_than_half(self, node: BPlusNode):
+        return len(node.keys) > self.min_ptr_degree()
 
 
     def show(self, node: BPlusNode, _prefix="", _last=True):
@@ -302,7 +294,7 @@ if __name__ == "__main__":
 
     random.seed(1)
 
-    ls_nums = list(range(30000))
+    ls_nums = list(range(300000))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
@@ -332,7 +324,6 @@ if __name__ == "__main__":
         except:
             traceback.print_exc()
             tree.show_tree()
-
             break
         
     #tree.show_tree()

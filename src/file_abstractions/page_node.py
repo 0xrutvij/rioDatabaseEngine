@@ -163,7 +163,7 @@ class PageNode:
 if __name__ == "__main__":
     example = PageNode(1)
     from enums import DataType
-    num_columns=np.uint8(3),
+    num_columns=np.uint8(3)
     data_types=[
         DataType.TEXT,
         DataType.INT,

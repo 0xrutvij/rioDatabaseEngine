@@ -29,7 +29,7 @@ class DataPointer(Generic[T]):
         except:
             data_repr = "..."
         finally:
-            if len(data_repr) > 10:
+            if len(data_repr) > 300:
                 data_repr = "..."
 
         return (
@@ -38,26 +38,24 @@ class DataPointer(Generic[T]):
 
 
 class Node:
-    MIN_DEG = 3
 
     def __init__(self, leaf: bool) -> None:
         self.keys: List[Union[DataPointer, int]] = []
         self.pointers: List[Node] = []
         self.is_leaf = leaf
-        
-    @classmethod
-    def min_ptr_degree(cls):
-        return int(cls.MIN_DEG)
-
-    @classmethod
-    def max_ptr_degree(cls):
-        return int(2 * cls.MIN_DEG)
 
 
 class BTree:
 
-    def __init__(self) -> None:
+    def __init__(self, min_deg: int = 3) -> None:
         self.root = Node(True)
+        self.min_degree = max(min_deg, 3)
+
+    def min_ptr_degree(self):
+        return self.min_degree
+
+    def max_ptr_degree(self):
+        return 2 * self.min_degree
         
     def search(self, key: Union[DataPointer, int]):
         return self._search(self.root, key)
@@ -79,7 +77,7 @@ class BTree:
     def insert(self, key: Union[DataPointer, int]):
         current_root = self.root
 
-        if len(current_root.keys) == Node.max_ptr_degree() - 1:
+        if len(current_root.keys) == self.max_ptr_degree() - 1:
             new_node = Node(False)
             self.root = new_node
             new_node.pointers.append(current_root)
@@ -94,7 +92,7 @@ class BTree:
         node_to_split = node.pointers[ptr_idx]
         new_node = Node(node_to_split.is_leaf)
 
-        t = Node.min_ptr_degree()
+        t = self.min_ptr_degree()
 
         new_node.keys = node_to_split.keys[t:]        
         new_node.pointers = node_to_split.pointers[t:]
@@ -121,7 +119,7 @@ class BTree:
         else:
             insertion_ptr = node.pointers[i]
 
-            if len(insertion_ptr.keys) == Node.max_ptr_degree() - 1:
+            if len(insertion_ptr.keys) == self.max_ptr_degree() - 1:
                 self._split_child(node, i)
                 if key > node.keys[i]:
                     i += 1
@@ -227,9 +225,8 @@ class BTree:
         left.keys = left.keys + [median_key] + right.keys
         left.pointers.extend(right.pointers)
 
-    @staticmethod
-    def _check_fill(node: Node):
-        return len(node.keys) >= Node.min_ptr_degree()
+    def _check_fill(self, node: Node):
+        return len(node.keys) >= self.min_ptr_degree()
 
 
     @staticmethod

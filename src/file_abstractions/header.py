@@ -10,6 +10,9 @@ PAGE_SIZE = 512
 DEFAULT_AVG_LENGTH = 100
 
 def int_to_byte_stream(int_like_val: Any, size: int):
+    """
+    :param int_like_val:
+    """
     try:
         int_like_val.tobytes(">")
     except Exception:
@@ -28,6 +31,9 @@ def big_endian_int(byte_st: bytes):
 
 @dataclass
 class PageHeader:
+    """
+
+    """
     page_type: PageType
     num_cells: np.uint16
     # true value is the complete of this num ~data_start
