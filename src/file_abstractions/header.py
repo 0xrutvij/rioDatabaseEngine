@@ -6,9 +6,6 @@ from itertools import starmap
 from typing import Any
 from enums import PageType
 
-PAGE_SIZE = 512
-DEFAULT_AVG_LENGTH = 100
-
 def int_to_byte_stream(int_like_val: Any, size: int):
     """
     :param int_like_val:
@@ -32,7 +29,7 @@ def big_endian_int(byte_st: bytes):
 @dataclass
 class PageHeader:
     """
-
+    
     """
     page_type: PageType
     num_cells: np.uint16

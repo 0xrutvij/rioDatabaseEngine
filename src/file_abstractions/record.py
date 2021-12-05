@@ -194,3 +194,36 @@ class Record:
     @classmethod
     def record_updater(cls, operation: Dict):
         return lambda x: cls.update_val(x, operation)
+
+
+@dataclass
+class RouterCell:
+    row_id: np.uint32
+    lc_page_no: np.uint32
+
+    def to_byte_stream(self):
+        row_id_byte_stream = int_to_byte_stream(self.row_id, 4)
+        cp_byte_stream = int_to_byte_stream(self.lc_page_no, 4)
+        return b"".join((cp_byte_stream, row_id_byte_stream))
+
+    @classmethod
+    def read_router_cell(cls, byte_stream: bytes):
+        raw = io.BytesIO(byte_stream)
+        read_buff = io.BufferedRandom(raw)
+
+        cp_byte_stream = read_buff.read(4)
+        lc_page_num = big_endian_int(cp_byte_stream)
+
+        row_id_b = read_buff.read(4)
+        row_id = big_endian_int(row_id_b)
+
+        return lc_page_num, row_id
+
+
+if __name__ == "__main__":
+
+    te = RouterCell(1, 19)
+
+    print(te.to_byte_stream())
+
+    print(RouterCell.read_router_cell(te.to_byte_stream()))

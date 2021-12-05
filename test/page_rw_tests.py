@@ -7,7 +7,7 @@ import numpy as np
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src/file_abstractions")
 
 from record import Record
-from page_node import PageNode
+from page_writer import LeafPageWriter
 from enums import DataType
 from header import PageHeader
 
@@ -48,7 +48,7 @@ class FileAbstractDevTests(unittest.TestCase):
         self.assertEqual(x, 25)
 
     def page_to_bytes_test(self):
-        y = PageNode(
+        y = LeafPageWriter(
             2,
             records=[self.perm_record],
             offsets=[]
@@ -72,13 +72,13 @@ class FileAbstractDevTests(unittest.TestCase):
         self.assertEqual(self.perm_record,  y)
 
     def bytes_to_page_test(self):
-        y = PageNode(
+        y = LeafPageWriter(
             1,
             records=[self.perm_record],
             offsets=[]
         )
         b_stream = y.to_byte_stream()
-        x = PageNode.from_byte_stream(b_stream, 1)
+        x = LeafPageWriter.from_byte_stream(b_stream, 1)
         self.assertEqual(x, y)
 
 if __name__ == "__main__":

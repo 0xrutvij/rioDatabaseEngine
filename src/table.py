@@ -1,15 +1,17 @@
 from __future__ import annotations
 import datetime as dt
-from os import name
-from random import random
 import traceback
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List
 import numpy as np
 import math
 
 from bplus_tree import BPlusNode, BPlusTree
 from file_abstractions import Record, DataType
 from btree import DataPointer
+from header import PageHeader
+from page_writer import LeafPageWriter, InternalPageWriter
+from enums import PageType
+from record import RouterCell
 
 COL_DATA_KEYS = {"column_names", "data_types", "nullability", "column_keys"}
 class Table:
@@ -20,7 +22,7 @@ class Table:
         6 * (2 + max_rec_size) = 496
         max_rec_size = floor(496 / 6) - 2
         """
-
+        self.page_size = page_size
         page_space = page_size - 16
         self.max_rec_size = math.floor(page_space/6) - 2
 
@@ -105,7 +107,85 @@ class Table:
         # ordering the pages for de-serialization later
         # saving the file to disk
         # TODO: add logging and backup mechanism for failure protection
-        raise NotImplementedError
+
+        page_list = []
+
+        self._recurse_to_bytes(self.bptree.root, 0, 0xFFFFFFFF, page_list)
+
+        return b"".join(page_list)
+
+    def _recurse_to_bytes(self, node: BPlusNode, page_num: int, parent_page_num: int, page_bytes_list: list, right_relative: int = 0):
+        # root node condition.
+        if node.is_leaf:
+        
+            head = PageHeader(
+                PageType.table_leaf_page,
+                num_cells=0,
+                data_start=0,
+                right_relatve=right_relative,
+                parent=parent_page_num
+            )
+
+
+            writer = LeafPageWriter(
+                page_number=page_num,
+                header=head,
+                records=[rec.data for rec in node.keys],
+                page_size=self.page_size
+            )
+
+            page_bytes_list.append(writer.to_byte_stream())
+            # we added one page to the list...
+            # TODO: verify
+            return page_num + 1
+        
+            
+        # post-order recursion, call children left to right 
+        # and they append to the page bytes list
+        else:
+
+            n_children = len(node.pointers)
+            my_page_no = page_num
+            ccpno = my_page_no + 1
+            my_cpnos = []
+
+            for i, child in enumerate(node.pointers):
+                my_cpnos.append(ccpno)
+                if i == n_children-1:
+                    ccpno = self._recurse_to_bytes(child, ccpno, my_page_no, page_bytes_list, 0)
+                else:
+                    ccpno = self._recurse_to_bytes(child, ccpno, my_page_no, page_bytes_list, ccpno+1)
+
+            head = PageHeader(
+                PageType.table_interior_page,
+                0,
+                0,
+                my_cpnos[-1],
+                parent_page_num
+            )
+
+            r_cells =[]
+            for pno, rid in zip(my_cpnos[:-1], node.keys):
+                r_cells.append(RouterCell(rid, pno))
+
+            writer = InternalPageWriter(
+                my_page_no,
+                head,
+                [],
+                r_cells,
+                my_cpnos[-1],
+                self.page_size
+            )
+
+            page_bytes_list.append(writer.to_byte_stream(parent_page_num))
+                
+            return ccpno
+                
+
+
+
+
+
 
     def insert(self, insert_dict: Dict) -> int:
         """
@@ -584,7 +664,7 @@ if __name__ == "__main__":
     print("Pre-Delete", end="\n\n")
 
     table_test.bptree.show_tree()
-
+    """
     table_test.delete(condition={
             "negated": "TRUE",
             "column_name": "FirstString",
@@ -596,4 +676,8 @@ if __name__ == "__main__":
     print("\n\nPost-Delete", end="\n\n")
 
     table_test.bptree.show_tree()
+    """
+    
 
+    with open("table.hex", "wb") as of:
+        of.write(table_test.to_byte_stream())

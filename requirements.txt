@@ -1,3 +1,5 @@
+tabulate==0.8.9
+pandas==1.2.4
 pyparsing==3.0.6
-bplustree==0.0.3
-BTrees==4.9.2
+numpy==1.20.0
+dataclasses==0.8

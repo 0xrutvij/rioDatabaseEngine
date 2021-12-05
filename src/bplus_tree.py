@@ -286,6 +286,9 @@ class BPlusTree:
     def show_tree(self):
         self.show(self.root)
 
+    def serialize(self):
+        pass
+
 
     
                 
@@ -294,28 +297,16 @@ if __name__ == "__main__":
 
     random.seed(1)
 
-    ls_nums = list(range(300000))
+    ls_nums = list(range(30))
     random.shuffle(ls_nums)
 
     for i in ls_nums:
         dp = DataPointer(int.__int__, i)
         tree.insert(dp)
-        # tree.show_tree()
+        
+    tree.show_tree()
 
     random.shuffle(ls_nums)
-    """
-    for i in ls_nums:
-        try:
-            if i == 3827 or i == 3814:
-                tree.show_tree()
-            tree.btree_delete(i)
-        except Exception as e:
-            print(f"\n\n\n Num is {i} \n")
-            print(traceback.format_exc())
-            tree.show_tree()
-            break
-
-    # tree.show_tree()
     """
     for i in ls_nums:
         #print(f"\n\nDeleting key {i}:")
@@ -327,3 +318,4 @@ if __name__ == "__main__":
             break
         
     #tree.show_tree()
+    """
