@@ -249,8 +249,8 @@ class Table:
         try:
             self._validate_insert_types(insertion_values)
         except Exception as e:
-            traceback.print_exception()
-            # print(traceback.format_exception_only(e.__class__, e)[-1])
+            traceback.print_exc()
+            # TODO: print(traceback.format_exception_only(e.__class__, e)[-1])
             return
         
         insertion_record = Record(
