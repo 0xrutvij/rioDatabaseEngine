@@ -9,45 +9,33 @@ from utils.settings import Settings
 CMD = "command"
 
 def swtich_and_delegate(parse_dict: Dict, in_memory_tables: Dict[str, Table], 
-    in_memory_indices: Dict, files_list: List[str] = None):
+    in_memory_indices: Dict):
 
     command = parse_dict.get(CMD, None)
 
     parse_dict["mem_data"] = {
         "imt": in_memory_tables,
-        "imi": in_memory_indices,
-        "fl": files_list
+        "imi": in_memory_indices
     }
 
     if command.upper() not in DEFINED_CLAUSES:
         raise ParseSyntaxException("", 0, msg="Clause not detected.")
 
     function_ptr = DEFINED_CLAUSES[command]
-    sign = inspect.signature(function_ptr)
+    
+    if command.upper() != "SELECT":
+        sign = inspect.signature(function_ptr)
 
-    for function_arg in sign.parameters.keys():
-        if function_arg not in parse_dict:
-            raise ParseSyntaxException("", 0, msg="Malformed SQL Statement.")
+        for function_arg in sign.parameters.keys():
+            if function_arg not in parse_dict:
+                raise ParseSyntaxException("", 0, msg="Malformed SQL Statement.")
 
     del parse_dict[CMD]
 
-    function_ptr(**parse_dict)
+    return function_ptr(**parse_dict)
 
 
-def check_path_list(tname: str, file_paths: List[str]):
-    # TODO: implement, and call function to load the file if needed.
-    return False
-
-
-def load_table(tname: str, file_paths: List[str]) -> Table:
-    raise NotImplementedError
-
-
-def load_indices(tname: str, file_paths: List[str]) -> List[object]:
-    raise NotImplementedError
-
-
-def get_table(tname: str, in_mem_tables: Dict, in_mem_idx: Dict, file_paths: List[str], creation_mode=False):
+def get_table(tname: str, in_mem_tables: Dict, in_mem_idx: Dict, creation_mode=False):
     """
     Finds the table name in list of memory tables and disk tables.
     """
@@ -56,29 +44,20 @@ def get_table(tname: str, in_mem_tables: Dict, in_mem_idx: Dict, file_paths: Lis
     if creation_mode:
         if tname in in_mem_tables:
             raise ValueError(f"Table named {tname} already exists!")
-        elif check_path_list(tname, file_paths):
-            raise ValueError(f"Table named {tname} already exists!")
         else:
             return False
-
     else:
         if tname in in_mem_tables:
             return in_mem_tables[tname]
-    
-        elif check_path_list(tname, file_paths):
-            in_mem_tables[tname] = load_table(tname, file_paths)
-            in_mem_idx[tname] = load_indices(tname, file_paths)
-            return in_mem_tables[tname]
-
         else:
             raise FileNotFoundError(f"Table named {tname} not found!")
 
 
 def create_table(table_name: str, column_list: List[Dict], mem_data: Dict):
     table_name = table_name.lower()
-    imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
+    imt, imi = map(lambda x: mem_data[x], ["imt", "imi"])
     
-    if not get_table(table_name, imt, imi, fl, creation_mode=True):
+    if not get_table(table_name, imt, imi, creation_mode=True):
         imt[table_name] = Table.create_table(
             {
                 "table_name": table_name,
@@ -91,15 +70,17 @@ def create_table(table_name: str, column_list: List[Dict], mem_data: Dict):
 
     return
 
+
 def create_index(table_name: str, column_name: str, mem_data: Dict):
     # should create a new b tree object in memory
     raise NotImplementedError
 
+
 def drop_table(table_name: str, mem_data: Dict):
     table_name = table_name.lower()
-    imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
+    imt, imi = map(lambda x: mem_data[x], ["imt", "imi"])
 
-    if table_obj := get_table(table_name, imt, imi, fl):
+    if table_obj := get_table(table_name, imt, imi):
         del imt[table_name]
         del imi[table_name]
         del table_obj
@@ -108,9 +89,9 @@ def drop_table(table_name: str, mem_data: Dict):
 
 def insert_row(table_name: str, column_name_list: List[str], value_list: List[str], mem_data: Dict):
     table_name = table_name.lower()
-    imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
+    imt, imi = map(lambda x: mem_data[x], ["imt", "imi"])
 
-    table_obj: Table = get_table(table_name, imt, imi, fl)
+    table_obj: Table = get_table(table_name, imt, imi)
 
     table_obj.insert(
         {
@@ -123,9 +104,9 @@ def insert_row(table_name: str, column_name_list: List[str], value_list: List[st
 
 def delete_row(table_name: str, condition: Dict, mem_data: Dict):
     table_name = table_name.lower()
-    imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
+    imt, imi = map(lambda x: mem_data[x], ["imt", "imi"])
 
-    table_obj: Table = get_table(table_name, imt, imi, fl)
+    table_obj: Table = get_table(table_name, imt, imi)
 
     if condition:
         table_obj.delete(condition)
@@ -137,9 +118,9 @@ def delete_row(table_name: str, condition: Dict, mem_data: Dict):
 
 def update_row(table_name: str, operation: Dict, condition: Dict, mem_data: Dict):
     table_name = table_name.lower()
-    imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
+    imt, imi = map(lambda x: mem_data[x], ["imt", "imi"])
 
-    table_obj: Table = get_table(table_name, imt, imi, fl)
+    table_obj: Table = get_table(table_name, imt, imi)
 
     table_obj.update(
         update_op=operation,
@@ -148,11 +129,11 @@ def update_row(table_name: str, operation: Dict, condition: Dict, mem_data: Dict
 
     return
 
-def select_rows(table_name: str, column_name_list: List[str], condition: Dict, mem_data: Dict):
+def select_rows(table_name: str, column_name_list: List[str], condition: Dict, mem_data: Dict, ret_mode: bool = False):
     table_name = table_name.lower()
-    imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
+    imt, imi = map(lambda x: mem_data[x], ["imt", "imi"])
 
-    table_obj: Table = get_table(table_name, imt, imi, fl)
+    table_obj: Table = get_table(table_name, imt, imi)
 
 
     selections, cname_list = table_obj.select(
@@ -161,6 +142,9 @@ def select_rows(table_name: str, column_name_list: List[str], condition: Dict, m
             "condition": condition
         }
     )
+    
+    if ret_mode:
+        return selections
 
     table_format_print(selections, cname_list)
     

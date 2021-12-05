@@ -23,7 +23,7 @@ class Table:
         6 * (2 + max_rec_size) = 496
         max_rec_size = floor(496 / 6) - 2
         """
-        self.page_size = page_size
+    
         page_space = page_size - 16
         self.max_rec_size = math.floor(page_space/6) - 2
 
@@ -38,6 +38,7 @@ class Table:
             "column_keys": []
         }
         self.record_count = 0
+        self.page_size = page_size
         self.name = ""
 
     @classmethod
@@ -72,7 +73,7 @@ class Table:
             column_data_init["column_names"].append(column["column_name"])
             dtype_enum = DataType.from_type_name(column["data_type"])
             column_data_init["data_types"].append(dtype_enum)
-
+        
         new_table.update_metadata(
             column_data=column_data_init,
             record_count=0,
@@ -99,7 +100,7 @@ class Table:
     @classmethod
     def from_byte_stream(cls, byte_stream: bytes, 
                          page_size: int = 512, rec_count: int = 0, 
-                         cdata: Dict = {}, name: str = "") -> Table:
+                         cdata: Dict = {}, name: str = "", update = True) -> Table:
         """
         currently -> simple implementation: insert one at a time
         TODO: future -> better implementation: bulk load OR use file page nos.
@@ -133,11 +134,13 @@ class Table:
         for dp in dps:
             new_table.bptree.insert(dp)
 
-        new_table.update_metadata(
-            cdata,
-            rec_count,
-            name
-        )
+        if update:
+            new_table.update_metadata(
+                cdata,
+                rec_count,
+                name
+            )
+            
         return new_table
 
     def to_byte_stream(self) -> bytes:
@@ -401,6 +404,7 @@ class Table:
         
         if "column_ord" not in condition and condition:
             condition["column_ord"] = self._column_name_to_ord(condition["column_name"])
+            
             
 
         selections = []

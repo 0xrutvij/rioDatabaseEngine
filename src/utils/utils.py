@@ -1,5 +1,7 @@
 from settings import Settings
 from string import Template
+import sys
+import os
 
 SEP_LINE = Settings.line("-", 78)
 DB_NAME = "RioDBLite"
@@ -14,6 +16,14 @@ def splash_screen():
     print(Settings.get_copyright())
     print(HELP_MSG)
     print(SEP_LINE)
+
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 if __name__ == "__main__":
     splash_screen()

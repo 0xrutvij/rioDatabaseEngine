@@ -311,7 +311,7 @@ select_statement.set_parse_action(lambda plist: {
 ###########################################################
 
 show_table_stmt.set_parse_action(
-    lambda: select_statement.parse_string("SELECT table_name FROM davisbase_tables;")
+    lambda: select_statement.parse_string("SELECT table_name FROM riobase_tables;")
 )
 
 statement = (create_table_stmt | drop_table_stmt | create_index_stmt | insert_row_stmt

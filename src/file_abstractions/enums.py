@@ -30,7 +30,7 @@ class DataType(Enum):
     def get_id_bytes(self, value: Any):
         id_int = self.value[1]
         if self.value[0] == "TEXT":
-            id_int += len(value)
+            id_int += len(value) if value else 0
         return int.to_bytes(id_int, 1, "big")
 
 
