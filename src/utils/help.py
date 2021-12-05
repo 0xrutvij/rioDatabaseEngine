@@ -9,4 +9,6 @@ def help():
             "exit   : Exit davisbase RioDB"  
     ]
     return '\n'.join(help)
-print(help())
+
+if __name__ == "__main__":
+    print(help())
