@@ -608,7 +608,7 @@ class Table:
         # search from uid min (0) up until the last assigned number
         # at least one of them should be in the table if the table is not empty
         for uid in range(self.record_count):
-            node, idx = self.bptree.search(uid)
+            node, idx = self.bptree._search(self.bptree.root, uid)
             if node and idx is not None:
                 return node
 
