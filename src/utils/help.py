@@ -8,7 +8,7 @@ def help():
             "drop   : Delete table from database",
             "exit   : Exit davisbase RioDB"  
     ]
-    return '\n'.join(help)
+    return "\n".join(help)
 
 if __name__ == "__main__":
     print(help())
