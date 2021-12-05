@@ -68,7 +68,7 @@ class DataType(Enum):
             return self.val[3](unpack('d', byte_data)[0])
 
         elif type_ == "TIME":
-            ms_since_midnight = int.from_bytes(byte_data)
+            ms_since_midnight = int.from_bytes(byte_data, "big")
             hours = ms_since_midnight // 3600 * 1000
             rem_ms = ms_since_midnight % (3600 * 1000)
             minutes = rem_ms // (60*1000)
@@ -79,12 +79,12 @@ class DataType(Enum):
             return dt.time(hours, minutes, seconds, mu_s)
 
         elif type_ == "DATETIME":
-            ms_epoch = int.from_bytes(byte_data)
+            ms_epoch = int.from_bytes(byte_data, "big")
             s_epoch = ms_epoch / 1000
             return dt.datetime.fromtimestamp(s_epoch)
 
         elif type_ == "DATE":
-            ms_epoch = int.from_bytes(byte_data)
+            ms_epoch = int.from_bytes(byte_data, "big")
             s_epoch = ms_epoch / 1000
             return dt.date.fromtimestamp(s_epoch)
 

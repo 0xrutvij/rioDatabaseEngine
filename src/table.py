@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime as dt
+import io
 import traceback
 from typing import Any, Dict, List
 import numpy as np
@@ -8,7 +9,7 @@ import math
 from bplus_tree import BPlusNode, BPlusTree
 from file_abstractions import Record, DataType
 from btree import DataPointer
-from header import PageHeader
+from header import PageHeader, big_endian_int
 from page_writer import LeafPageWriter, InternalPageWriter
 from enums import PageType
 from record import RouterCell
@@ -91,15 +92,53 @@ class Table:
             print("Missing column data, update failed.")
 
     @classmethod
-    def from_byte_stream(cls, byte_stream: bytes) -> Table:
-        # load table file
-        # find root page
-        # reconstruct tree using root page
-        # simple implementation:
-        #           - insert one at a time
-        # better implementation:
-        #           - bulk load
-        raise NotImplementedError
+    def from_table_file(cls, file_path: str) -> Table:
+        byte_stream = cls.read_table(file_path)
+        return cls.from_byte_stream(byte_stream)
+
+    @classmethod
+    def from_byte_stream(cls, byte_stream: bytes, 
+                         page_size: int = 512, rec_count: int = 0, 
+                         cdata: Dict = {}, name: str = "") -> Table:
+        """
+        currently -> simple implementation: insert one at a time
+        TODO: future -> better implementation: bulk load OR use file page nos.
+        """
+        raw = io.BytesIO(byte_stream)
+        read_buff = io.BufferedRandom(raw)
+
+        #nodes = []
+        page_n = read_buff.read(page_size)
+        pg_no = 0
+        dps: List[DataPointer] = []
+
+        while page_n:
+            pg_type = big_endian_int(page_n[:1])
+
+            if pg_type == 13:
+                node = LeafPageWriter.from_byte_stream(page_n, pg_no)
+                leaf = node.to_bpnode()
+                dps.extend(leaf.keys)
+            else:
+                #node = InternalPageWriter.from_byte_stream(page_n, pg_no)
+                pass
+
+            #nodes.append(node)
+            pg_no+=1
+            page_n = read_buff.read(512)
+
+        new_table = cls(page_size=page_size)
+            
+        dps.sort(key=DataPointer.get_id)
+        for dp in dps:
+            new_table.bptree.insert(dp)
+
+        new_table.update_metadata(
+            cdata,
+            rec_count,
+            name
+        )
+        return new_table
 
     def to_byte_stream(self) -> bytes:
         # converting a table to byte stream
@@ -112,7 +151,7 @@ class Table:
 
         self._recurse_to_bytes(self.bptree.root, 0, 0xFFFFFFFF, page_list)
 
-        return b"".join(page_list)
+        return b"".join(reversed(page_list))
 
     def _recurse_to_bytes(self, node: BPlusNode, page_num: int, parent_page_num: int, page_bytes_list: list, right_relative: int = 0):
         # root node condition.
@@ -180,12 +219,14 @@ class Table:
             page_bytes_list.append(writer.to_byte_stream(parent_page_num))
                 
             return ccpno
-                
-
-
-
-
-
+          
+    @staticmethod
+    def read_table(tfile: str):
+        fb = None
+        with open(tfile, "rb") as inf:
+            fb = inf.read()
+        
+        return fb
 
     def insert(self, insert_dict: Dict) -> int:
         """
@@ -524,9 +565,6 @@ class Table:
         nullables = self.column_data["nullability"]
         col_role = self.column_data["column_keys"]
 
-        condition = { "negated": "FALSE", "column_name": "MiddleInt", 
-        "column_ord": 1, "comparator": "=", "value": 0 }
-
         c_ord = condition.get("column_ord", self._column_name_to_ord(condition["column_name"]))
 
         typ = types[c_ord]
@@ -580,9 +618,9 @@ class Table:
 if __name__ == "__main__":
 
     data_values=[
-        "asdasda",
+        "First Col Val",
         10,
-        "scsc",
+        "Second Col Val",
         dt.datetime.now().isoformat()
     ]
 
@@ -618,7 +656,7 @@ if __name__ == "__main__":
 
     table_test = Table.create_table(create_op=cop)
 
-    for i in range(10):
+    for i in range(30):
         dv = data_values.copy()
         dv[1] *= i
         dv[3] = dt.datetime.now().isoformat()
@@ -679,5 +717,12 @@ if __name__ == "__main__":
     """
     
 
-    with open("table.hex", "wb") as of:
-        of.write(table_test.to_byte_stream())
+    #with open("table.hex", "wb") as of:
+    #    of.write(table_test.to_byte_stream())
+
+    table_t = Table.from_byte_stream(table_test.to_byte_stream())
+
+    table_t.bptree.show_tree()
+
+
+

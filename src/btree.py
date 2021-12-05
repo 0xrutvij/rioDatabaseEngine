@@ -13,6 +13,9 @@ class DataPointer(Generic[T]):
         self.id_extractor: Callable[[T], int] = type_id_extractor
         self.data: T = keyed_instance
 
+    def get_id(self):
+        return self.id
+
     def __lt__(self, other: Union[DataPointer[T], int]) -> bool:
         if isinstance(other, int):
             return self.id < other

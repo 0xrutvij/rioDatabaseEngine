@@ -11,6 +11,8 @@ import numpy as np
 
 from dataclasses import dataclass, field
 from typing import List
+from bplus_tree import BPlusNode
+from btree import DataPointer
 
 from header import PageHeader, int_to_byte_stream, big_endian_int
 from record import Record, RouterCell
@@ -62,6 +64,21 @@ class LeafPageWriter:
         ])
 
         return byte_stream
+
+    def to_bpnode(self) -> BPlusNode:
+        x = BPlusNode(True, None)
+        x.keys = []
+        
+        for rec in self.records:
+            dp = DataPointer(
+                Record.get_id,
+                rec
+            )
+            x.keys.append(dp)
+
+        x.keys.sort(key=DataPointer.get_id)
+        return x
+
 
     @classmethod
     def from_byte_stream(cls, byte_stream: bytes, pg_num: int):
@@ -148,6 +165,44 @@ class InternalPageWriter:
         ])
 
         return byte_stream
+
+    def to_bpnode(self):
+        #TODO: Implement for a truer, more efficient implementation.
+        raise NotImplementedError
+    
+    @classmethod
+    def from_byte_stream(cls, byte_stream: bytes, pg_num: int):
+        raw = io.BytesIO(byte_stream)
+        read_buff = io.BufferedRandom(raw)
+
+        header_bytes = read_buff.read(16)
+        header = PageHeader.from_byte_stream(header_bytes)
+        num_cells = header.num_cells
+
+        read_buff.seek(16)
+
+        offsets_paired = list()
+
+        for _ in range(num_cells):
+            cell_offset_bytes = read_buff.read(2)
+            cell_offset_int = big_endian_int(cell_offset_bytes)
+            offsets_paired.append((cell_offset_bytes, cell_offset_int))
+
+
+        router_cells = list()
+        for _, ci in offsets_paired:
+            read_buff.seek(ci)
+            cell_bytes = read_buff.read(8)
+            rec = RouterCell.from_byte_stream(cell_bytes)
+            router_cells.append(rec)
+
+        return InternalPageWriter(
+            pg_num,
+            header,
+            list(),
+            router_cells,
+            header.right_relatve
+        )
 
 
 if __name__ == "__main__":

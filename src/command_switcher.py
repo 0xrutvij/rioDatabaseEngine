@@ -51,6 +51,7 @@ def get_table(tname: str, in_mem_tables: Dict, in_mem_idx: Dict, file_paths: Lis
     """
     Finds the table name in list of memory tables and disk tables.
     """
+    tname = tname.lower()
 
     if creation_mode:
         if tname in in_mem_tables:
@@ -74,6 +75,7 @@ def get_table(tname: str, in_mem_tables: Dict, in_mem_idx: Dict, file_paths: Lis
 
 
 def create_table(table_name: str, column_list: List[Dict], mem_data: Dict):
+    table_name = table_name.lower()
     imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
     
     if not get_table(table_name, imt, imi, fl, creation_mode=True):
@@ -94,6 +96,7 @@ def create_index(table_name: str, column_name: str, mem_data: Dict):
     raise NotImplementedError
 
 def drop_table(table_name: str, mem_data: Dict):
+    table_name = table_name.lower()
     imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
 
     if table_obj := get_table(table_name, imt, imi, fl):
@@ -104,6 +107,7 @@ def drop_table(table_name: str, mem_data: Dict):
     return
 
 def insert_row(table_name: str, column_name_list: List[str], value_list: List[str], mem_data: Dict):
+    table_name = table_name.lower()
     imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
 
     table_obj: Table = get_table(table_name, imt, imi, fl)
@@ -118,6 +122,7 @@ def insert_row(table_name: str, column_name_list: List[str], value_list: List[st
     return
 
 def delete_row(table_name: str, condition: Dict, mem_data: Dict):
+    table_name = table_name.lower()
     imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
 
     table_obj: Table = get_table(table_name, imt, imi, fl)
@@ -131,6 +136,7 @@ def delete_row(table_name: str, condition: Dict, mem_data: Dict):
     return
 
 def update_row(table_name: str, operation: Dict, condition: Dict, mem_data: Dict):
+    table_name = table_name.lower()
     imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
 
     table_obj: Table = get_table(table_name, imt, imi, fl)
@@ -143,6 +149,7 @@ def update_row(table_name: str, operation: Dict, condition: Dict, mem_data: Dict
     return
 
 def select_rows(table_name: str, column_name_list: List[str], condition: Dict, mem_data: Dict):
+    table_name = table_name.lower()
     imt, imi, fl = map(lambda x: mem_data[x], ["imt", "imi", "fl"])
 
     table_obj: Table = get_table(table_name, imt, imi, fl)

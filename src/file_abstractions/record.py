@@ -207,7 +207,7 @@ class RouterCell:
         return b"".join((cp_byte_stream, row_id_byte_stream))
 
     @classmethod
-    def read_router_cell(cls, byte_stream: bytes):
+    def from_byte_stream(cls, byte_stream: bytes):
         raw = io.BytesIO(byte_stream)
         read_buff = io.BufferedRandom(raw)
 
@@ -217,7 +217,7 @@ class RouterCell:
         row_id_b = read_buff.read(4)
         row_id = big_endian_int(row_id_b)
 
-        return lc_page_num, row_id
+        return cls(row_id, lc_page_num)
 
 
 if __name__ == "__main__":
@@ -226,4 +226,4 @@ if __name__ == "__main__":
 
     print(te.to_byte_stream())
 
-    print(RouterCell.read_router_cell(te.to_byte_stream()))
+    print(RouterCell.from_byte_stream(te.to_byte_stream()))
