@@ -5,10 +5,11 @@ from pyparsing import ParseSyntaxException
 from table import Table
 from utils.table_format import table_format_print
 from utils.settings import Settings
-
+from utils.internal_queries import insert_parse_dict_cdata, insert_parse_dict_tdata
+import query_parser as qp
 CMD = "command"
 
-def swtich_and_delegate(parse_dict: Dict, in_memory_tables: Dict[str, Table], 
+def switch_and_delegate(parse_dict: Dict, in_memory_tables: Dict[str, Table], 
     in_memory_indices: Dict):
 
     command = parse_dict.get(CMD, None)
@@ -67,6 +68,19 @@ def create_table(table_name: str, column_list: List[Dict], mem_data: Dict):
         )
 
         print(f"Table {table_name} created! \n")
+        
+    if table_name not in {"riobase_tables", "riobase_columns"}:
+        table_rec_count = imt["riobase_tables"].record_count
+        pdict = insert_parse_dict_tdata(table_rec_count + 1, table_name, Settings.get_page_size(), 0)
+        switch_and_delegate(pdict, imt, imi)
+        
+        
+        for column_data in column_list:
+            col_rec_count = imt["riobase_columns"].record_count
+            column_data["row_id"] = col_rec_count + 1
+            column_data["table_name"] = column_data["table_name"].lower()
+            pdict2 = insert_parse_dict_cdata(**column_data)
+            switch_and_delegate(pdict2, imt, imi)
 
     return
 

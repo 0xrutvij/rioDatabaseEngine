@@ -86,6 +86,8 @@ class Table:
         # TODO: set up methods for retrieving info
         if COL_DATA_KEYS.difference(set(column_data.keys())) == set():
             self.column_data = column_data
+            if column_data["data_types"] and isinstance(column_data["data_types"][0], str):
+                column_data["data_types"] = list(map(DataType.from_type_name, column_data["data_types"])) 
             self.record_count = record_count
             self.name = name
 

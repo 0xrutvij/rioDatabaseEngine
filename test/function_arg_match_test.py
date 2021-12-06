@@ -3,7 +3,7 @@ import os
 import json
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/..")
 
-from src.command_switcher import swtich_and_delegate, CMD
+from src.command_switcher import switch_and_delegate, CMD
 import query_test_cases as qpc
 
 
@@ -21,7 +21,7 @@ function_call_args = [
 
 for cargs in function_call_args:
     try: 
-        swtich_and_delegate(cargs.copy())
+        switch_and_delegate(cargs.copy())
     except NotImplementedError as e:
         pass
     finally:

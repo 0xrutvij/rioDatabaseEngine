@@ -62,10 +62,10 @@ class DataType(Enum):
             return self.value[3](int_val)
 
         elif type_ == "FLOAT":
-            return self.val[3](unpack('f', byte_data)[0])
+            return self.value[3](unpack('f', byte_data)[0])
 
         elif type_ == "DOUBLE":
-            return self.val[3](unpack('d', byte_data)[0])
+            return self.value[3](unpack('d', byte_data)[0])
 
         elif type_ == "TIME":
             ms_since_midnight = int.from_bytes(byte_data, "big")
