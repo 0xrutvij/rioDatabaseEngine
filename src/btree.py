@@ -17,14 +17,14 @@ class DataPointer(Generic[T]):
         return self.id
 
     def __lt__(self, other: Union[DataPointer[T], int]) -> bool:
-        if isinstance(other, int):
-            return self.id < other
-        return self.id < other.id
+        if isinstance(other, DataPointer):
+            return self.id < other.id
+        return self.id < other
 
     def __eq__(self, other: Union[DataPointer[T], int]) -> bool:
-        if isinstance(other, int):
-            return self.id == other
-        return self.id == other.id
+        if isinstance(other, DataPointer):
+            return self.id == other.id
+        return self.id == other
 
     def __repr__(self) -> str:
         try:

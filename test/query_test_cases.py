@@ -50,15 +50,7 @@ drop_table_test_result = """{
 
 ######################################
 
-insert_row_test_case = """insert into table
-(c1, c2, c3)
-test_table
-values
-("hello world", "fingers crossed", 1);
-"""
-
-
-"""INSERT INTO 
+insert_row_test_case = """INSERT INTO 
   TABLE (organisation_id, name, organisation_type, parent_organisation_id) 
   organisation 
   VALUES ('123','Company','123 Corp','-1');"""
@@ -93,6 +85,14 @@ delete_row_test_result = """{
     "comparator": "<>",
     "value": "joe"
   }
+}"""
+
+delete_row_test_case_no_cond = "DELETE FROM TABLE example_table;"
+
+delete_row_test_result_no_cond = """{
+  "command": "DELETE",
+  "table_name": "example_table",
+  "condition": {}
 }"""
 
 ######################################

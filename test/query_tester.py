@@ -32,11 +32,10 @@ class parsingTest(unittest.TestCase):
     def test_row_insertion(self):
         res = qp.insert_row_stmt.parse_string(qtc.insert_row_test_case)
         res_jstr = json.dumps(res[0], indent="  ")
-        print(res_jstr)
-        #self.assertEqual(res_jstr, qtc.insert_row_test_result)
+        self.assertEqual(res_jstr, qtc.insert_row_test_result)
 
     def test_show_tables(self):
-        res1 = qp.statement.parse_string("SELECT table_name FROM davisbase_tables;")
+        res1 = qp.statement.parse_string("SELECT table_name FROM riobase_tables;")
         res1 = json.dumps(res1[0], indent="  ")
 
         res2 = qp.statement.parse_string("SHOW TABLES;")
@@ -45,6 +44,14 @@ class parsingTest(unittest.TestCase):
         self.assertEqual(res1, res2)
 
     def test_row_deletion(self):
+        res = qp.delete_record_stmt.parse_string(qtc.delete_row_test_case_no_cond)
+        res_jstr = json.dumps(res[0], indent="  ")
+        
+        self.assertEqual(res_jstr, qtc.delete_row_test_result_no_cond)
+        
+        
+        
+    def test_row_deletion_where(self):
         res = qp.delete_record_stmt.parse_string((qtc.delete_row_test_case))
         res_jstr = json.dumps(res[0], indent="  ")
         self.assertEqual(res_jstr, qtc.delete_row_test_result)
