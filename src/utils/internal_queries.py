@@ -101,5 +101,53 @@ def update_tdata_dict(table_name, record_count):
         
     return utdict
 
+def update_tdata_dict(table_name, record_count):
+    
+    utdict = {
+        "command": "UPDATE",
+        "table_name": "riobase_tables",
+        "operation": {
+            "operation_type": "SET",
+            "column_name": "record_count",
+            "comparator": "=",
+            "value": record_count
+            },
+        "condition": {
+            "negated": "FALSE",
+            "column_name": "table_name",
+            "comparator": "=",
+            "value": table_name
+        }
+    }
+        
+    return utdict
+
+def delete_cdata_dict(table_name):
+    delete_dict =  {
+        "command": "DELETE",
+        "table_name": "riobase_columns",
+        "condition": {
+            "negated": "FALSE",
+            "column_name": "table_name",
+            "comparator": "=",
+            "value": table_name
+        }
+    }
+    return delete_dict
+
+def delete_tdata_dict(table_name):
+    delete_dict =  {
+        "command": "DELETE",
+        "table_name": "riobase_tables",
+        "condition": {
+            "negated": "FALSE",
+            "column_name": "table_name",
+            "comparator": "=",
+            "value": table_name
+        }
+    }
+    return delete_dict
+  
+
 if __name__ == "__main__":
     pass
