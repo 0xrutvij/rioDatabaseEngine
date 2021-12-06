@@ -96,7 +96,7 @@ def drop_table(table_name: str, mem_data: Dict):
 
     if table_obj := get_table(table_name, imt, imi):
         del imt[table_name]
-        del imi[table_name]
+        #del imi[table_name]
         del table_obj
         
     return

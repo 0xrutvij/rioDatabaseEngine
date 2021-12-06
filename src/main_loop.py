@@ -7,6 +7,7 @@ from table import Table
 from utils.utils import splash_screen, SEP_LINE, blockPrint, enablePrint
 from utils.settings import Settings
 from utils.internal_queries import internal_parse_dict_cdata, internal_parse_dict_tdata, update_tdata_dict
+
 import query_parser as qp
 from command_switcher import switch_and_delegate
 from utils.create_database import (create_riobase_columns, 
@@ -17,7 +18,6 @@ from utils.create_database import (create_riobase_columns,
                                    riobase_columns_cdata
                                    )
 import readline
-import shutil
 from zipfile import ZipFile, is_zipfile
 
 DEBUG = True
@@ -68,6 +68,7 @@ def repl():
 def query_delegator(usr_input: str, tables: Dict, indices: Dict):
 
     if usr_input.lower() == "exit;":
+        save_to_disk(tables, indices)
         Settings.set_exit(True)
         return
 
@@ -206,8 +207,9 @@ def load_db(tables: Dict, indices: Dict):
                         pg_size, rec_count = output[0]
                     
                     tbytes = database.read(f"{tname}.tbl")
+                    blockPrint()
                     new_table = Table.from_byte_stream(tbytes, pg_size, rec_count, column_data_init)
-                                        
+                    enablePrint()        
                     tables[tname] = new_table
         
     
