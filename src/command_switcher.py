@@ -5,7 +5,10 @@ from pyparsing import ParseSyntaxException
 from table import Table
 from utils.table_format import table_format_print
 from utils.settings import Settings
-from utils.internal_queries import insert_parse_dict_cdata, insert_parse_dict_tdata
+from utils.internal_queries import (insert_parse_dict_cdata, 
+                                    insert_parse_dict_tdata,
+                                    delete_cdata_dict,
+                                    delete_tdata_dict)
 import query_parser as qp
 CMD = "command"
 
@@ -98,6 +101,11 @@ def drop_table(table_name: str, mem_data: Dict):
         del imt[table_name]
         #del imi[table_name]
         del table_obj
+        
+    p1 = delete_tdata_dict(table_name)
+    switch_and_delegate(p1, imt, imi)
+    p2 = delete_cdata_dict(table_name)
+    switch_and_delegate(p2, imt, imi)
         
     return
 

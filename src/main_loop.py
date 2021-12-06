@@ -6,6 +6,7 @@ import pandas as pd
 from table import Table
 from utils.utils import splash_screen, SEP_LINE, blockPrint, enablePrint
 from utils.settings import Settings
+from utils.help import help
 from utils.internal_queries import internal_parse_dict_cdata, internal_parse_dict_tdata, update_tdata_dict
 
 import query_parser as qp
@@ -80,6 +81,9 @@ def query_delegator(usr_input: str, tables: Dict, indices: Dict):
 
     elif usr_input.lower() == "save;":
         save_to_disk(tables, indices)
+        
+    elif usr_input.lower() == "help;":
+        print(help())
 
     else:
         parse_dict = qp.statement.parse_string(usr_input)[0]
