@@ -207,9 +207,7 @@ def load_db(tables: Dict, indices: Dict):
                     
                     tbytes = database.read(f"{tname}.tbl")
                     new_table = Table.from_byte_stream(tbytes, pg_size, rec_count, column_data_init)
-                    
-                    new_table.bptree.show_tree()
-                    
+                                        
                     tables[tname] = new_table
         
     

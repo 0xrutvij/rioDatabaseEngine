@@ -78,8 +78,6 @@ class Record:
         lval = self.data_values[condition["column_ord"]]
         rval = condition["value"]
         comp = condition["comparator"]
-        print(lval, rval)
-        print(type(lval), type(rval))
         if condition["negated"] == "TRUE":
             comp = CONDITION_NEGATED[comp]
 

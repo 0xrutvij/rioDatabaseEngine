@@ -407,7 +407,8 @@ class Table:
         if "column_ord" not in condition and condition:
             condition["column_ord"] = self._column_name_to_ord(condition["column_name"])
             
-            
+        if condition:
+            self._validate_condition(condition) 
 
         selections = []
 

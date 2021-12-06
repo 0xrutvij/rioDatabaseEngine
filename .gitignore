@@ -1,6 +1,8 @@
 .idea/
 filedump2.txt
 *.hex
+*.db
+*.bkp
 
 # Created by https://www.gitignore.io/api/macos,linux,django,python,pycharm
 
