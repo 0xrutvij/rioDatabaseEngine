@@ -252,7 +252,7 @@ where_clause = Suppress(WHERE) + predicate
 
 # DELETE FROM TABLE table_name [WHERE condition];
 delete_record_stmt = (DELETE + Suppress(FROM + TABLE) 
-                     + identifier + where_clause 
+                     + identifier + Opt(where_clause).set_parse_action(lambda plist: plist or {}) 
                      + STMT_TERMINATOR)
 
 delete_record_stmt.set_parse_action(lambda plist: {

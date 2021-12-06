@@ -288,10 +288,10 @@ class Table:
         """
 
 
-        if "column_ord" not in condition and condition:
+        if condition and "column_ord" not in condition:
             condition["column_ord"] = self._column_name_to_ord(condition["column_name"])
         
-        if "column_ord" not in update_op and update_op:
+        if update_op and "column_ord" not in update_op:
             update_op["column_ord"] = self._column_name_to_ord(update_op["column_name"])
 
         try:
@@ -346,12 +346,13 @@ class Table:
         "column_ord": 1, "comparator": "=", "value": 0 }
         """
 
-        if "column_ord" not in condition and condition:
+        if condition and "column_ord" not in condition:
             condition["column_ord"] = self._column_name_to_ord(condition["column_name"])
         
         # if no condition, clear all records.
         if condition is None:
             self.bptree = BPlusTree()
+            return
         
         try:
             self._validate_condition(condition)
@@ -404,7 +405,7 @@ class Table:
         col_ord_list = self._column_name_list_to_ord(selection_dict["column_name_list"])
         condition = selection_dict["condition"]
         
-        if "column_ord" not in condition and condition:
+        if  condition and "column_ord" not in condition:
             condition["column_ord"] = self._column_name_to_ord(condition["column_name"])
             
         if condition:
