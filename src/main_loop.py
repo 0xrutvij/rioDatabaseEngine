@@ -16,12 +16,11 @@ from utils.create_database import (create_riobase_columns,
                                    fill_riobase_tables, 
                                    fill_riobase_columns,
                                    riobase_tables_cdata,
-                                   riobase_columns_cdata
-                                   )
+                                   riobase_columns_cdata)
 import readline
 from zipfile import ZipFile, is_zipfile
 
-DEBUG = True
+DEBUG = False
 TBL_FILE_EXT = ".tbl"
 IDX_FILE_EXT = ".ndx"
 DATABASE_FOLDER = "rio.db"

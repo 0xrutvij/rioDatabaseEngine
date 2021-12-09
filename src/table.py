@@ -40,6 +40,7 @@ class Table:
         self.record_count = 0
         self.page_size = page_size
         self.name = ""
+        self.recently_deleted = set()
 
     @classmethod
     def create_table(cls, create_op: Dict, page_size=512) -> Table:
@@ -345,7 +346,7 @@ class Table:
         condition = { "negated": "FALSE", "column_name": "MiddleInt", 
         "column_ord": 1, "comparator": "=", "value": 0 }
         """
-
+        
         if condition and "column_ord" not in condition:
             condition["column_ord"] = self._column_name_to_ord(condition["column_name"])
         
@@ -375,18 +376,20 @@ class Table:
                 updated_refs = Record.filter_delete(record_refs, condition)
 
                 retained_id_set = {ref.get_id():ref for ref in updated_refs}
+                
+                for id in record_id_set:
+                    if id not in retained_id_set:
+                        ids_to_delete.add(id) 
 
-                ids_to_delete.update(record_id_set.difference(retained_id_set))
-
-                for key in current_leaf.keys:
+                """for key in current_leaf.keys:
                     if key.id in retained_id_set:
-                        key.data = retained_id_set[key.id]
-
+                        key.data = retained_id_set[key.id]"""
                 # keep applying update to each leaf by calling leaf.next!
                 current_leaf = current_leaf.next
 
             for id in ids_to_delete:
                 self.bptree.delete(id)
+                self.recently_deleted.add(id)
         
         return
 
@@ -411,7 +414,7 @@ class Table:
         if condition:
             self._validate_condition(condition) 
 
-        selections = []
+        selections = set()
 
         if False:
             #TODO: Implement keys...
@@ -420,14 +423,16 @@ class Table:
             current_leaf = self._find_first_record()
 
             while current_leaf:
-                record_refs = [key.data for key in current_leaf.keys]
-
+                record_refs = [key.data for key in current_leaf.keys if key.id not in self.recently_deleted]
+                
                 sels = Record.filter_subset_select(record_refs, col_ord_list, condition)
-
-                selections.extend(sels)
+                
+                for sel in sels:
+                    selections.add(tuple(sel))
                 
                 current_leaf = current_leaf.next
 
+        selections = [list(sel) for sel in selections]
         return selections, selection_dict["column_name_list"] or self.column_data["column_names"]
 
     def _column_name_list_to_ord(self, name_list: List[str] = []) -> List[int]:
@@ -616,9 +621,10 @@ class Table:
         # search from uid min (0) up until the last assigned number
         # at least one of them should be in the table if the table is not empty
         for uid in range(self.record_count):
-            node, idx = self.bptree._search(self.bptree.root, uid)
-            if node and idx is not None:
-                return node
+            if uid not in self.recently_deleted:
+                node, idx = self.bptree._search(self.bptree.root, uid)
+                if node and idx is not None:
+                    return node
 
         return None
 

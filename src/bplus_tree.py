@@ -138,7 +138,7 @@ class BPlusTree:
         val_loc, idx = self._search(self.root, key)
 
         if idx is None:
-            print(val_loc.keys)
+            return
             raise KeyError(f"Key {key} not in tree.")
 
         val_loc.keys.remove(key)
