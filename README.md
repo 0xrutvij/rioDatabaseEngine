@@ -1,5 +1,5 @@
 # Rudimentary Database Engine
-## (DavisBase: Rio de Janeiro)
+## (DavisBase: Rio de Janeiro) ~ Using Custom Parsed subset of SQL
 
 <br/>
 
